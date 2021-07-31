@@ -1,0 +1,8 @@
+/* 所有元素都生效 */
+* {
+    /* 外边距都去掉 */
+    margin: 0;
+    padding: 0;
+    /* 盒状模型 */
+    box-sizing: border-box;
+}
