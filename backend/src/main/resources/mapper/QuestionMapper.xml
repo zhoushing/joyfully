@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.joyfully.springboot.mapper.QuestionMapper">
+    <select id="queryAllCategoryByUserId" resultType="java.lang.String">
+        select category from `question`
+        where user_id = #{userId}
+    </select>
+    <select id="queryRandomLimit" resultType="com.joyfully.springboot.entity.Question">
+        SELECT *
+        FROM `question` AS t1 JOIN (SELECT ROUND(RAND() * ((SELECT MAX(id) FROM `question`)-(SELECT MIN(id) FROM `question`))
+                                                     +(SELECT MIN(id) FROM `question`)) AS id) AS t2
+        WHERE t1.id >= t2.id and t1.share = 1
+        ORDER BY t1.id LIMIT #{limit};
+    </select>
+    <select id="queryRandomLimitById" resultType="com.joyfully.springboot.entity.Question">
+        SELECT *
+        FROM `question` AS t1 JOIN (SELECT ROUND(RAND() * ((SELECT MAX(id) FROM `question`)-(SELECT MIN(id) FROM `question`))
+                                                     +(SELECT MIN(id) FROM `question`)) AS id) AS t2
+        WHERE t1.id >= t2.id and t1.user_id = #{id}
+        ORDER BY t1.id LIMIT #{limit};
+    </select>
+
+</mapper>

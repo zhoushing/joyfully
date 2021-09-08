@@ -1,5 +1,5 @@
 <template>
-  <div >
+  <div>
     <!--头部-->
     <Header/>
   </div>
@@ -8,21 +8,15 @@
     <!--侧边栏-->
     <Aside />
     <el-config-provider :locale="locale">
-    <!--内容区域-->
-    <Home />
+      <!--内容区域-->
+      <router-view style="flex: 1"/>
     </el-config-provider>
   </div>
-  <router-view style="flex: 1"/>
 </template>
 
-<style>
-
-</style>
-
 <script>
-import Header from "@/components/Header";
-import Aside from "@/components/Aside";
-import Home from "@/views/Home";
+import Header from "@/components/AdminHeader";
+import Aside from "@/components/AdminAside";
 
 import {ElConfigProvider} from 'element-plus'
 import zhCn from 'element-plus/lib/locale/lang/zh-cn'
@@ -30,7 +24,6 @@ import zhCn from 'element-plus/lib/locale/lang/zh-cn'
 export default {
   name: "Layout",
   components: {
-    Home,
     Header,
     Aside,
     [ElConfigProvider.name]:ElConfigProvider,//添加组件
@@ -42,3 +35,7 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+
+</style>

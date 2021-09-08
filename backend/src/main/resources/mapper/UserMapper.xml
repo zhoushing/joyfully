@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.joyfully.springboot.mapper.UserMapper">
+    <resultMap id="userMap" type="com.joyfully.springboot.entity.User">
+        <result property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="pwd" column="pwd"/>
+        <result property="nickName" column="nick_name"/>
+        <result property="birthday" column="birthday"/>
+        <result property="sex" column="sex"/>
+        <result property="address" column="address"/>
+        <collection property="questionList" javaType="ArrayList" ofType="com.joyfully.springboot.entity.Question">
+            <result column="q_id" property="id"/>
+            <result column="q_issue" property="issue"/>
+            <result column="q_answer" property="answer"/>
+            <result column="q_category" property="category"/>
+            <result column="q_type" property="type"/>
+            <result column="q_share" property="share"/>
+        </collection>
+    </resultMap>
+    
+    <select id="findPage" resultMap="userMap">
+        select `user`.*, question.id q_id, question.issue q_issue, question.answer q_answer,
+               question.category q_category, question.type q_type, question.share q_share
+        from `user` left join question on user.id = question.user_id
+    </select>
+</mapper>
