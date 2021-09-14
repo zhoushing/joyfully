@@ -74,10 +74,10 @@ public interface QuestionService {
     int update(Question entity, Wrapper<Question> updateWrapper);
 
     /**
-     * 查询所有类别通过userid
+     * 查询所有类别的用户id
      *
-     * @param userId
-     * @return {@link List<String>}
+     * @param userId 用户id
+     * @return {@link List}<{@link String}>
      */
     List<String> queryAllCategoryByUserId(Integer userId);
 

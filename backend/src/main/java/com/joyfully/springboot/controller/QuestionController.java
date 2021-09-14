@@ -30,7 +30,7 @@ public class QuestionController {
     UserServiceImpl userService;
 
     /**
-     * 保存
+     * 保存问题
      *
      * @param question 问题
      * @return {@link Result<?>}
@@ -40,12 +40,13 @@ public class QuestionController {
         if (question.getCategory() == null || "".equals(question.getCategory())) {
             question.setCategory("默认");
         }
+
         questionService.insert(question);
         return Result.success();
     }
 
     /**
-     * 删除
+     * 删除指定问题
      *
      * @param id id
      * @return {@link Result<?>}
@@ -57,9 +58,9 @@ public class QuestionController {
     }
 
     /**
-     * 更新
+     * 更新问题
      *
-     * @param question 用户
+     * @param question 问题
      * @return {@link Result<?>}
      */
     @PutMapping("/update")
@@ -69,7 +70,7 @@ public class QuestionController {
     }
 
     /**
-     * 查询页面
+     * 查询问题列表
      *
      * @param pageNum  当前页面位置
      * @param pageSize 页面大小
@@ -80,11 +81,13 @@ public class QuestionController {
     public Result<?> findPage(@RequestParam(defaultValue = "1") Integer pageNum,
                               @RequestParam(defaultValue = "10") Integer pageSize,
                               @RequestParam(defaultValue = "") String search) {
-        LambdaQueryWrapper<Question> wrapper = Wrappers.<Question>lambdaQuery();
+        LambdaQueryWrapper<Question> wrapper = Wrappers.lambdaQuery();
+
         // search条件不为空时，执行模糊查询，否则查询所有
         if (StrUtil.isNotBlank(search)) {
             wrapper.like(Question::getUserId, search);
         }
+
         Page<Question> questionPage = questionService.selectPage(new Page<>(pageNum, pageSize), wrapper);
         return Result.success(questionPage);
 
@@ -143,36 +146,3 @@ public class QuestionController {
         return Result.success(questionList);
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

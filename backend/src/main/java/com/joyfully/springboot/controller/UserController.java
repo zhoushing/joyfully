@@ -41,6 +41,12 @@ public class UserController {
     @Resource(description = "questionService")
     QuestionServiceImpl questionService;
 
+    /**
+     * 登录验证
+     *
+     * @param user 用户
+     * @return {@link Result}<{@link ?}>
+     */
     @PostMapping("/login")
     public Result<?> login(@RequestBody User user) {
         User res = userService.selectOne(Wrappers.<User>lambdaQuery().eq(User::getName, user.getName())
@@ -52,6 +58,12 @@ public class UserController {
         return Result.success(res);
     }
 
+    /**
+     * 注册用户
+     *
+     * @param user 用户
+     * @return {@link Result}<{@link ?}>
+     */
     @PostMapping("/register")
     public Result<?> register(@RequestBody User user) {
         User selectOne = userService.selectOne(Wrappers.<User>lambdaQuery().eq(User::getName, user.getName()));
@@ -126,7 +138,7 @@ public class UserController {
     }
 
     /**
-     * 查询页面
+     * 查询用户列表
      *
      * @param pageNum  当前页面位置
      * @param pageSize 页面大小
@@ -148,7 +160,7 @@ public class UserController {
     }
 
     /**
-     * Excel 导出
+     * Excel 导出用户信息
      *
      * @param response 响应
      * @throws IOException ioexception
@@ -157,6 +169,7 @@ public class UserController {
     public void export(HttpServletResponse response) throws IOException {
         List<Map<String, Object>> list = CollUtil.newArrayList();
         List<User> all = userService.selectList(null);
+
         for (User user : all) {
             Map<String, Object> row1 = new LinkedHashMap<>();
             row1.put("id", user.getId());
@@ -168,10 +181,10 @@ public class UserController {
             list.add(row1);
         }
 
-        // 2. 写 excel
+        // 写 excel
         ExcelWriter writer = ExcelUtil.getWriter(true);
         writer.write(list, true);
-        response.setContentType("application/vnd.openxmlformatsofficedocument.spreadsheetml.sheet;charset=utf-8");
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=utf-8");
         String fileName = URLEncoder.encode("用户信息", "UTF-8");
         response.setHeader("Content-Disposition", "attachment;filename=" + fileName + ".xlsx");
         ServletOutputStream out = response.getOutputStream();
@@ -181,7 +194,7 @@ public class UserController {
     }
 
     /**
-     * 导入的模板可以使用 Excel 导出的文件
+     * 导入
      *
      * @param file Excel
      * @return {@link Result}<{@link ?}>
@@ -192,19 +205,23 @@ public class UserController {
         InputStream inputStream = file.getInputStream();
         List<List<Object>> lists = ExcelUtil.getReader(inputStream).read(1);
         List<User> saveList = new ArrayList<>();
+
         for (List<Object> row : lists) {
             User user = new User();
             user.setName(row.get(1).toString());
             user.setNickName(row.get(2).toString());
-            user.setBirthday(LocalDate.parse(row.get(3).toString().split(" ")[0], DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+            user.setBirthday(LocalDate.parse(row.get(3).toString().split(" ")[0],
+                    DateTimeFormatter.ofPattern("yyyy-MM-dd")));
             user.setSex(row.get(5).toString());
             user.setAddress(row.get(5).toString());
             saveList.add(user);
         }
+
         for (User user : saveList) {
             try {
                 userService.insert(user);
-            }catch (Exception e) {
+            }
+            catch (Exception e) {
                 return Result.error("-1", "insert error");
             }
 
@@ -212,36 +229,3 @@ public class UserController {
         return Result.success();
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

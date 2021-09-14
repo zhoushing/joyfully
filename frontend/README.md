@@ -1,4 +1,4 @@
-> 这是一个简单的 vue 项目，基于 vue 3和 Element-plus搭建的。
+> 这是一个简单的 vue 项目，基于 vue 3 和 Element-plus 搭建的。
 
 ## 目录结构
 

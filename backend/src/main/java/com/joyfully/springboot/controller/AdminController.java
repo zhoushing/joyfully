@@ -22,9 +22,18 @@ import java.util.Map;
 @RequestMapping("/admin")
 public class AdminController {
 
+    /**
+     * 管理员业务逻辑
+     */
     @Resource(description = "adminService")
     AdminServiceImpl adminService;
 
+    /**
+     * 更改密码
+     *
+     * @param datas 数据
+     * @return {@link Result}<{@link ?}>
+     */
     @PostMapping("/changePwd")
     public Result<?> changePassword(@RequestBody Map<String, Object> datas) {
         Integer id = (Integer) datas.get("id");
@@ -33,63 +42,88 @@ public class AdminController {
 
         Admin admin = adminService.selectById(id);
 
-        // 原密码输入错误
         if (!sourcePwd.equals(admin.getPwd())) {
             return Result.error("-1", "原密码错误");
         }
 
+        // 原密码正确,更新密码并反馈到数据库
         admin.setPwd(pwd);
         adminService.updateById(admin);
         return Result.success();
     }
 
+    /**
+     * 检查权限
+     *
+     * @param id id
+     * @return {@link Result}<{@link ?}>
+     */
     @GetMapping("/checkPower")
     public Result<?> checkPower(@RequestParam Integer id) {
         return Result.success(adminService.checkPower(id));
     }
 
+    /**
+     * 登录验证
+     *
+     * @param admin 管理
+     * @return {@link Result}<{@link ?}>
+     */
     @PostMapping("/login")
     public Result<?> login(@RequestBody Admin admin) {
         Admin res = adminService.selectOne(Wrappers.<Admin>lambdaQuery().eq(Admin::getName, admin.getName())
                 .eq(Admin::getPwd, admin.getPwd()));
+
         if (res == null) {
             return Result.error("-1", "用户名不存在或者密码错误");
         }
+
         // 将查找出来res用户信息附带给data，用于前端的信息展示
         return Result.success(res);
     }
 
+    /**
+     * 注册
+     *
+     * @param admin 管理
+     * @return {@link Result}<{@link ?}>
+     */
     @PostMapping("/register")
     public Result<?> register(@RequestBody Admin admin) {
         Admin selectOne = adminService.selectOne(Wrappers.<Admin>lambdaQuery().eq(Admin::getName, admin.getName()));
+
         if (selectOne != null) {
             return Result.error("-1", "用户名已存在");
         }
+
         int res = adminService.insert(admin);
         if (res == 0) {
             return Result.error("-1", "注册失败");
         }
+
         return Result.success();
     }
 
     /**
-     * 保存
+     * 添加管理员用户
      *
      * @param admin 用户
      * @return {@link Result}
      */
     @PostMapping("/save")
     public Result<?> save(@RequestBody Admin admin) {
+
         // 没有用户名无法创建用户
         if (admin.getName() == null) {
-            return Result.error("-1", "用户名未填写！");
+            return Result.error("-1", "管理员用户名未填写！");
         }
+
         adminService.insert(admin);
         return Result.success();
     }
 
     /**
-     * 删除
+     * 删除指定管理员
      *
      * @param id id
      * @return {@link Result<?>}
@@ -101,7 +135,7 @@ public class AdminController {
     }
 
     /**
-     * 更新
+     * 更新指定管理员信息
      *
      * @param admin 用户
      * @return {@link Result<?>}
@@ -113,11 +147,11 @@ public class AdminController {
     }
 
     /**
-     * 查询页面
+     * 查询所有管理员
      *
      * @param pageNum  当前页面位置
      * @param pageSize 页面大小
-     * @param search   搜索
+     * @param search   搜索条件
      * @return {@link Result<?>}
      */
     @GetMapping("/find")
@@ -133,36 +167,3 @@ public class AdminController {
         return Result.success(adminPage);
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

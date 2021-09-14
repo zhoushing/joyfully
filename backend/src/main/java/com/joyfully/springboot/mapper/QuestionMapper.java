@@ -16,8 +16,8 @@ public interface QuestionMapper extends BaseMapper<Question> {
     /**
      * 查询所有类别通过userid
      *
-     * @param userId
-     * @return {@link List<String>}
+     * @param userId 用户id
+     * @return {@link List}<{@link String}>
      */
     List<String> queryAllCategoryByUserId(Integer userId);
 

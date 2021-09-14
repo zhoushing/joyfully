@@ -12,6 +12,7 @@ import com.joyfully.springboot.entity.User;
  * @date 2021/07/31
  */
 public interface UserMapper extends BaseMapper<User> {
+
     /**
      * 查询所有信息
      * @param page 查询的页面

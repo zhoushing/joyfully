@@ -27,6 +27,9 @@ public class User {
     private String sex;
     private String address;
 
+    /**
+     * 用户对应的问题列表
+     */
     @TableField(exist = false)
     private List<Question> questionList;
 }
