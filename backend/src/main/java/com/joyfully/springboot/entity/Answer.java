@@ -1,44 +1,41 @@
 package com.joyfully.springboot.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 管理
+ * 回答
  *
  * @author marx
- * @date 2021/08/02
+ * @date 2021/11/03
  */
-@TableName("admin")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Admin {
-    /**
-     * id
-     */
+public class Answer {
     @TableId(value = "id", type = IdType.AUTO)
     private Integer id;
+
     /**
-     * 名字
+     * 内容
      */
-    private String name;
+    private String content;
+
     /**
-     * 密码
+     * 用户id
      */
-    private String pwd;
+    private Integer userId;
+
     /**
-     * 权限
+     * 用户昵称
      */
-    private Boolean power;
+    private String userName;
+
     /**
-     * 令牌
+     * 问题id
      */
-    @TableField(exist = false)
-    private String token;
+    private Integer questionId;
 }

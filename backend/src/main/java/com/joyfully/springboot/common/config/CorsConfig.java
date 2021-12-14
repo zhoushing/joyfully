@@ -1,4 +1,4 @@
-package com.joyfully.springboot.common;
+package com.joyfully.springboot.common.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

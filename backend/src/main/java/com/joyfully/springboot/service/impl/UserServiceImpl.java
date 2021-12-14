@@ -209,6 +209,17 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
+     * 查询所有信息
+     *
+     * @param page 查询的页面
+     * @return {@link Page}<{@link User}>
+     */
+    @Override
+    public Page<User> findPage(Page page, Wrapper<User> queryWrapper) {
+        return userMapper.findPage(page, queryWrapper);
+    }
+
+    /**
      * 根据 Wrapper 条件，查询全部记录（并翻页）
      *
      * @param page         分页查询条件
@@ -220,14 +231,4 @@ public class UserServiceImpl implements UserService {
         return userMapper.selectMapsPage(page, queryWrapper);
     }
 
-    /**
-     * 查询所有信息
-     *
-     * @param page 查询的页面
-     * @return {@link Page}<{@link User}>
-     */
-    @Override
-    public Page<User> findPage(Page<User> page) {
-        return userMapper.findPage(page);
-    }
 }

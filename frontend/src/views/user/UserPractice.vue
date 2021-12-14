@@ -1,16 +1,32 @@
 <template>
-  <div style="padding: 10px">
-    <el-backtop />
-    <div style="margin: 10px 0;">
+  <div style="padding: 10px; width: 100%">
+    <el-backtop/>
+    <div style="margin: 10px 0; text-align: right">
       <el-button @click="load" type="primary" size="normal">刷新</el-button>
+      &emsp;
     </div>
     <el-collapse v-model="activeName" v-for="(random, index) in randomQuestions"
                  accordion style="padding: 20px">
       <el-collapse-item :title="random.issue" :name="index">
-        答案：{{random.answer}}<br/>
-        分类：{{random.category}}
+        答案：
+        <el-button size="mini" type="success" plain @click="showAnswer(random.answerList)">
+          查看
+        </el-button>
+        <br/>
+        分类：{{ random.category }}
       </el-collapse-item>
     </el-collapse>
+  </div>
+
+  <div style="margin: 10px 0">
+    <el-dialog title="答案列表" v-model="answerVis" width="80%">
+      <el-table :data="answerList" stripe border>
+        <el-table-column prop="id" label="答案ID"></el-table-column>
+        <el-table-column prop="userId" label="所属用户ID"></el-table-column>
+        <el-table-column prop="userName" label="所属用户昵称"></el-table-column>
+        <el-table-column prop="content" label="答案内容" width="400"></el-table-column>
+      </el-table>
+    </el-dialog>
   </div>
 </template>
 
@@ -23,7 +39,9 @@ export default {
     return {
       randomQuestions: [],
       activeName: -1,
-      id: 0
+      id: 0,
+      answerVis: false,
+      answerList: [],
     }
   },
   created() {
@@ -37,7 +55,11 @@ export default {
         this.randomQuestions = res.data;
         console.log(res.data);
       });
-    }
+    },
+    showAnswer(answerList) {
+      this.answerList = answerList
+      this.answerVis = true
+    },
   }
 }
 </script>

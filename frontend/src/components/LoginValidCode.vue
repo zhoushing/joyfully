@@ -21,7 +21,7 @@ export default {
   props: {
     width: {
       type: String,
-      default: '100px'
+      default: '120px'
     },
     height: {
       type: String,
@@ -55,7 +55,7 @@ export default {
     createdCode() {
       const len = this.length
       const codeList = []
-      const chars = 'ABCDEFGHJKMNPQRSTWXYZabcdefhijkmnprstwxyz0123456789!?'
+      const chars = 'ABCDEFGHJKMNPQRSTWXYZabcdefhijkmnprstwxyz0123456789!?@'
       const charsLen = chars.length
       // 生成
       for (let i = 0; i < len; i++) {
@@ -88,6 +88,7 @@ ${data.transform}`
   justify-content: center;
   align-items: center;
   cursor: pointer;
+  border-radius: 4px;
 }
 
 .ValidCode span {

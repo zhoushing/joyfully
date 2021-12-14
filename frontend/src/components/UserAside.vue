@@ -9,13 +9,13 @@
       <el-menu-item>
         <template #title>
           <div v-if="isCollapse">
-            <el-button @click="openAside" type="text" style="width: 100%; height: 100%" >
-              <i class="el-icon-right"></i>
+            <el-button @click="openAside" type="text" style="width: 100%; height: 100%; font-size: 13px" >
+              展开
             </el-button>
           </div>
           <div v-if="!isCollapse">
-            <el-button @click="closeAside" type="text" style="width: 100%" >
-              <i class="el-icon-back"></i>
+            <el-button @click="closeAside" type="text" style="width: 100%; font-size: 15px" >
+              收起侧边栏
             </el-button>
           </div>
         </template>
@@ -54,11 +54,19 @@
           <i class="el-icon-tickets"></i>
         </el-menu-item>
       </el-submenu>
+
+      <el-menu-item index="/chatRoom">
+        <template #title>
+          <i class="el-icon-chat-line-round"></i>聊天室
+        </template>
+      </el-menu-item>
     </el-menu>
   </div>
 </template>
 
 <script>
+
+import { ChatDotRound } from "@element-plus/icons";
 
 export default {
   name: "Aside",

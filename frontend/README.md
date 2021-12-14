@@ -4,15 +4,15 @@
 
 ```bash
 ├── public                     # 静态资源
-│   │── favicon.ico            # favicon图标
 │   │── static                 # 配置文件
+│   │── favicon.ico            # favicon图标
 │   └── index.html             # html模板
 ├── src                        # 源代码
 │   ├── assets                 # 主题 字体等静态资源
 │   ├── components             # 全局公用组件
 │   ├── layout                 # 主要框架
 │   ├── router                 # 路由
-│   ├── store                  # 全局 store管理
+│   ├── store                  # 全局 store 管理
 │   ├── utils                  # 全局公用方法
 │   ├── views                  # views 所有页面
 │   ├── App.vue                # 入口页面

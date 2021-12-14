@@ -1,7 +1,14 @@
 package com.joyfully.springboot.mapper;
 
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.core.toolkit.Constants;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.joyfully.springboot.entity.Question;
+import com.joyfully.springboot.entity.User;
+import org.apache.ibatis.annotations.Param;
+import org.apache.poi.ss.formula.functions.T;
 
 import java.util.List;
 
@@ -37,4 +44,13 @@ public interface QuestionMapper extends BaseMapper<Question> {
      * @return {@link List}<{@link Question}>
      */
     List<Question> queryRandomLimitById(Integer limit, Integer id);
+
+    /**
+     * 查询所有信息
+     *
+     * @param page         查询的页面
+     * @param queryWrapper 查询包装
+     * @return page
+     */
+    Page<Question> findPage(Page<Question> page, @Param(Constants.WRAPPER) Wrapper<Question> queryWrapper);
 }

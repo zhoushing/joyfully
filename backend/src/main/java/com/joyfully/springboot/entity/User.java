@@ -20,11 +20,29 @@ import java.util.List;
 public class User {
     @TableId(value = "id", type = IdType.AUTO)
     private Integer id;
+    /**
+     * 用户名
+     */
     private String name;
+    /**
+     * 用户密码
+     */
     private String pwd;
+    /**
+     * 昵称
+     */
     private String nickName;
+    /**
+     * 生日
+     */
     private LocalDate birthday;
+    /**
+     * 性别
+     */
     private String sex;
+    /**
+     * 地址
+     */
     private String address;
 
     /**
@@ -32,4 +50,10 @@ public class User {
      */
     @TableField(exist = false)
     private List<Question> questionList;
+
+    /**
+     * 令牌
+     */
+    @TableField(exist = false)
+    private String token;
 }

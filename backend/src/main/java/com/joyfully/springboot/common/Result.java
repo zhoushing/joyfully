@@ -3,6 +3,8 @@ package com.joyfully.springboot.common;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * 返回给前台的信息包装类
  *

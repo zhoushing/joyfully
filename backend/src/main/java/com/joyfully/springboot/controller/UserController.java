@@ -12,6 +12,7 @@ import com.joyfully.springboot.common.Result;
 import com.joyfully.springboot.entity.User;
 import com.joyfully.springboot.service.impl.QuestionServiceImpl;
 import com.joyfully.springboot.service.impl.UserServiceImpl;
+import com.joyfully.springboot.util.TokenUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -54,6 +55,14 @@ public class UserController {
         if (res == null) {
             return Result.error("-1", "用户名不存在或者密码错误");
         }
+
+        // 生成token
+        String token = TokenUtils.getToken(res);
+        res.setToken(token);
+
+        // 将密码替换
+        res.setPwd("********");
+
         // 将查找出来res用户信息附带给data，用于前端的信息展示
         return Result.success(res);
     }
@@ -154,7 +163,14 @@ public class UserController {
         if (StrUtil.isNotBlank(search)) {
             wrapper.like(User::getNickName, search);
         }
-        Page<User> userPage = userService.findPage(new Page<>(pageNum, pageSize));
+        Page<User> userPage = userService.findPage(new Page<>(pageNum, pageSize), wrapper);
+
+        System.out.println("userPage.getCurrent() = " + userPage.getCurrent());
+        System.out.println("userPage.getPages() = " + userPage.getPages());
+        System.out.println("userPage.getSize() = " + userPage.getSize());
+        System.out.println("userPage.getTotal() = " + userPage.getTotal());
+        System.out.println("userPage.getRecords().size() = " + userPage.getRecords().size());
+
         return Result.success(userPage);
 
     }

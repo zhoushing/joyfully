@@ -150,6 +150,15 @@ public interface UserService {
     <P extends IPage<User>> P selectPage(P page, Wrapper<User> queryWrapper);
 
     /**
+     * 查询所有信息
+     *
+     * @param page         查询的页面
+     * @param queryWrapper 查询包装
+     * @return page
+     */
+    Page<User>  findPage(Page page, Wrapper<User> queryWrapper);
+
+    /**
      * 根据 Wrapper 条件，查询全部记录（并翻页）
      *
      * @param page         分页查询条件
@@ -157,11 +166,4 @@ public interface UserService {
      * @return {@link P}
      */
     <P extends IPage<Map<String, Object>>> P selectMapsPage(P page, Wrapper<User> queryWrapper);
-
-    /**
-     * 查询所有信息
-     * @param page 查询的页面
-     * @return page
-     */
-    Page<User> findPage(Page<User> page);
 }

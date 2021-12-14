@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.joyfully.springboot.entity.Admin;
 import com.joyfully.springboot.mapper.AdminMapper;
 import com.joyfully.springboot.service.AdminService;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;

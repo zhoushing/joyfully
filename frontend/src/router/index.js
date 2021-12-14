@@ -12,6 +12,7 @@ import UserMain from "../layout/UserMain";
 import UserQuestion from "../views/user/UserQuestion";
 import UserPractice from "../views/user/UserPractice";
 import OtherPractice from "../views/user/OtherPractice";
+import ChatRoom from "../views/common/ChatRoom";
 
 const routes = [
   {
@@ -92,6 +93,12 @@ const routes = [
         name: "UserFileList",
         component: FilesList
       },
+      {
+        path: '/chatRoom',
+        name: 'ChatRoom',
+        component: ChatRoom
+      },
+
     ]
   },
 ]

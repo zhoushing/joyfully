@@ -12,7 +12,6 @@
     <!--加上border就会表单溢出-->
     <el-table
         :data="tableData"
-
         style="width: 100%"
         stripe
         v-loading="isLoad">
@@ -20,12 +19,18 @@
       <el-table-column type="expand">
         <template #default="props">
           <el-form label-position="left" inline class="demo-table-expand">
-            <el-form-item label="问题">
+            <el-form-item label="问题：">
               <span>{{ props.row.issue }}</span>
             </el-form-item>
-            <el-form-item label="答案">
-              <span>{{ props.row.answer }}</span>
+
+            <br />
+            <el-form-item
+                label="答案：">
+                <el-button size="mini" type="success" plain @click="showAnswer(props.row.answerList)">
+                  查看
+                </el-button>
             </el-form-item>
+
           </el-form>
         </template>
       </el-table-column>
@@ -58,7 +63,7 @@
           sortable>
       </el-table-column>
       <el-table-column
-          prop="userId"
+          prop="quserId"
           label="所属用户id"
           sortable>
       </el-table-column>
@@ -66,6 +71,7 @@
           prop="share"
           label="是否分享">
       </el-table-column>
+
       <el-table-column
           fixed="right"
           label="操作">
@@ -90,6 +96,15 @@
           layout="total, sizes, prev, pager, next, jumper"
           :total="total">
       </el-pagination>
+
+      <el-dialog title="答案列表" v-model="answerVis" width="80%">
+        <el-table :data="answerList" stripe border>
+          <el-table-column prop="id" label="答案ID"></el-table-column>
+          <el-table-column prop="userId" label="所属用户ID"></el-table-column>
+          <el-table-column prop="userName" label="所属用户昵称"></el-table-column>
+          <el-table-column prop="content" label="答案内容" width="400"></el-table-column>
+        </el-table>
+      </el-dialog>
 
       <el-dialog title="提示" v-model="dialogVisible" width="30%">
         <el-form ref="form" :model="form" label-width="120px" :rules="rules">
@@ -145,7 +160,8 @@ export default {
         category: '',
         type: '',
         userId: '',
-        share: ''
+        share: '',
+        answerList: []
       },
       dialogVisible: false,
       search: '',
@@ -168,6 +184,8 @@ export default {
           {required: true, message: '请选择是否分享', trigger: 'blur'}
         ],
       },
+      answerVis: false,
+      answerList: [],
     }
   },
   /* 初始加载方法 */
@@ -186,6 +204,7 @@ export default {
         }
       }).then(res => {
         this.tableData = res.data.records;
+        console.log(this.tableData)
         this.total = res.data.total;
       });
     },
@@ -194,7 +213,6 @@ export default {
       this.form = {}
     },
     saveQuestion() {
-
       /* 更新 */
       if (this.form.id) {
         request.put("/question/update", this.form).then(res => {
@@ -263,6 +281,10 @@ export default {
     },
     filterTag(value, row) {
       return row.type === value;
+    },
+    showAnswer(answerList) {
+      this.answerList = answerList
+      this.answerVis = true
     },
   }
 }

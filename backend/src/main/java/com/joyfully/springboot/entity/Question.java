@@ -1,9 +1,13 @@
 package com.joyfully.springboot.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
+
+import java.util.List;
+import java.util.Scanner;
 
 /**
  * 问题
@@ -24,9 +28,10 @@ public class Question {
     private String issue;
 
     /**
-     * 回答
+     * 问题对应的答案列表
      */
-    private String answer;
+    @TableField(exist = false)
+    private List<Answer> answerList;
 
     /**
      * 类别（类似于计算机科学，临床医学）
@@ -41,10 +46,11 @@ public class Question {
     /**
      * 用户id
      */
-    private Integer userId;
+    private Integer qUserId;
 
     /**
      * 是否分享
      */
     private Boolean share;
+
 }

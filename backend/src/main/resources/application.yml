@@ -19,14 +19,30 @@ spring:
   profiles:
     active: prod
 
+  # 整合 Redis
+  redis:
+    port: 6379
+    password:
+    host: localhost
+    jedis:
+      pool:
+        max-idle: 6
+        max-active: 10
+        min-idle: 2
+    timeout: 2000
+
 # 文件存储的位置
 file:
   ip: localhost
   # 目标路径
   path:
 
-
-
+logging:
+  level:
+    com.joyfully: debug
+  file:
+    # 指定位置
+    name: ./logs/core.log
 
 
 

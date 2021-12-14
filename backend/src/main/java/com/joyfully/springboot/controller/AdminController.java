@@ -7,6 +7,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.joyfully.springboot.entity.Admin;
 import com.joyfully.springboot.common.Result;
 import com.joyfully.springboot.service.impl.AdminServiceImpl;
+import com.joyfully.springboot.util.TokenUtils;
+import lombok.extern.java.Log;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -20,6 +22,7 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/admin")
+@Log
 public class AdminController {
 
     /**
@@ -77,6 +80,13 @@ public class AdminController {
         if (res == null) {
             return Result.error("-1", "用户名不存在或者密码错误");
         }
+
+        // 生成token
+        String token = TokenUtils.getToken(res);
+        res.setToken(token);
+
+        // 将密码替换
+        res.setPwd("********");
 
         // 将查找出来res用户信息附带给data，用于前端的信息展示
         return Result.success(res);

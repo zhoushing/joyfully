@@ -52,15 +52,20 @@
           prop="address"
           label="地址">
       </el-table-column>
+      <el-table-column
+          prop="question"
+          label="问题列表">
+        <template #default="scope">
+        <el-button size="mini" type="success" plain @click="showQuestions(scope.row.questionList)">
+          查看
+        </el-button>
+        </template>
+      </el-table-column>
 
       <el-table-column
           fixed="right"
           label="操作">
         <template #default="scope">
-          <el-button size="mini" type="success" plain @click="showQuestions(scope.row.questionList)">
-            查看问题列表
-          </el-button>
-          <br />
           <el-button @click="handleEdit(scope.row)" type="primary" size="mini">编辑</el-button>
           <el-popconfirm title="确定删除吗？" @confirm="handleDelete(scope.row.id)">
             <template #reference>
@@ -85,8 +90,7 @@
       <el-dialog title="用户的问题列表" v-model="questionVis" width="80%">
         <el-table :data="questionList" stripe border>
           <el-table-column prop="id" label="ID"></el-table-column>
-          <el-table-column prop="issue" label="问题"></el-table-column>
-          <el-table-column prop="answer" label="回答"></el-table-column>
+          <el-table-column prop="issue" label="问题" width="400"></el-table-column>
           <el-table-column prop="category" label="类别"></el-table-column>
           <el-table-column prop="type" label="类型"></el-table-column>
           <el-table-column prop="share" label="是否分享"></el-table-column>
@@ -150,7 +154,7 @@ export default {
       search: '',
       currentPage: 1,
       pageSize: 10,
-      total: 10,
+      total: 0,
       tableData: [],
       isLoad: false,
       rules: {
@@ -177,6 +181,7 @@ export default {
           search: this.search
         }
       }).then(res => {
+        console.log(res);
         this.tableData = res.data.records;
         this.total = res.data.total;
       });
@@ -270,10 +275,8 @@ export default {
       location.href = "http://" + "localhost" + ":" + "9090" + "/user/export"
     },
     showQuestions(questions) {
-      console.log(this.questionVis);
       this.questionList = questions;
       this.questionVis = true;
-      console.log(this.questionVis);
     }
   }
 }

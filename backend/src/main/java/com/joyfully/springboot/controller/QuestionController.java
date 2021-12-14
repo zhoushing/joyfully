@@ -81,14 +81,14 @@ public class QuestionController {
     public Result<?> findPage(@RequestParam(defaultValue = "1") Integer pageNum,
                               @RequestParam(defaultValue = "10") Integer pageSize,
                               @RequestParam(defaultValue = "") String search) {
-        LambdaQueryWrapper<Question> wrapper = Wrappers.lambdaQuery();
+        LambdaQueryWrapper<Question> wrapper = Wrappers.<Question>lambdaQuery();
 
         // search条件不为空时，执行模糊查询，否则查询所有
         if (StrUtil.isNotBlank(search)) {
-            wrapper.like(Question::getUserId, search);
+            wrapper.like(Question::getQUserId, search);
         }
 
-        Page<Question> questionPage = questionService.selectPage(new Page<>(pageNum, pageSize), wrapper);
+        Page<Question> questionPage = questionService.findPage(new Page<>(pageNum, pageSize), wrapper);
         return Result.success(questionPage);
 
     }
@@ -110,13 +110,13 @@ public class QuestionController {
         LambdaQueryWrapper<Question> wrapper = Wrappers.<Question>lambdaQuery();
 
         // 根据userId筛选记录
-        wrapper.eq(Question::getUserId, userId);
+        wrapper.eq(Question::getQUserId, userId);
 
         // search条件不为空时，执行模糊查询，否则查询所有
         if (StrUtil.isNotBlank(search)) {
             wrapper.like(Question::getCategory, search);
         }
-        Page<Question> questionPage = questionService.selectPage(new Page<>(pageNum, pageSize), wrapper);
+        Page<Question> questionPage = questionService.findPage(new Page<>(pageNum, pageSize), wrapper);
         return Result.success(questionPage);
 
     }

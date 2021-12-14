@@ -111,7 +111,6 @@ export default {
           search: this.search
         }
       }).then(res => {
-        console.log(res.data);
         this.tableData = res.data.records;
         this.total = res.data.total
       });

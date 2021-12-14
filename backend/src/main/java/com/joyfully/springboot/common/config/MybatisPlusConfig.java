@@ -1,4 +1,4 @@
-package com.joyfully.springboot.common;
+package com.joyfully.springboot.common.config;
 
 import com.baomidou.mybatisplus.annotation.DbType;
 import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
@@ -14,7 +14,7 @@ import org.springframework.context.annotation.Configuration;
  * @date 2021/07/31
  */
 @Configuration
-@MapperScan("com/zs/springboot/mapper")
+@MapperScan("com/joyfully/springboot/mapper")
 public class MybatisPlusConfig {
 
     /**

@@ -2,10 +2,12 @@ package com.joyfully.springboot.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.joyfully.springboot.entity.Question;
 import com.joyfully.springboot.mapper.QuestionMapper;
 import com.joyfully.springboot.service.QuestionService;
 import org.springframework.stereotype.Service;
+import redis.clients.jedis.JedisPool;
 
 import javax.annotation.Resource;
 import java.io.Serializable;
@@ -26,6 +28,12 @@ public class QuestionServiceImpl implements QuestionService {
      */
     @Resource
     QuestionMapper questionMapper;
+
+    /**
+     * jedis
+     */
+    @Resource
+    JedisPool jedisPool;
     
     /**
      * 插入一条记录
@@ -239,6 +247,15 @@ public class QuestionServiceImpl implements QuestionService {
     @Override
     public <P extends IPage<Question>> P selectPage(P page, Wrapper<Question> queryWrapper) {
         return questionMapper.selectPage(page, queryWrapper);
+    }
+
+    /**
+     * 查询所有信息
+     * @param page 查询的页面
+     * @return page
+     */
+    public Page<Question> findPage(Page<Question> page, Wrapper<Question> queryWrapper) {
+        return questionMapper.findPage(page, queryWrapper);
     }
 
     /**

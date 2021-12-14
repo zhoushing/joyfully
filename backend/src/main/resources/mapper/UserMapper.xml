@@ -13,16 +13,23 @@
         <collection property="questionList" javaType="ArrayList" ofType="com.joyfully.springboot.entity.Question">
             <result column="q_id" property="id"/>
             <result column="q_issue" property="issue"/>
-            <result column="q_answer" property="answer"/>
             <result column="q_category" property="category"/>
             <result column="q_type" property="type"/>
             <result column="q_share" property="share"/>
         </collection>
     </resultMap>
-    
+
+    <!-- 在此处自定义了sql语句，但是还想使用mybatisplus的Wrapper筛选器，所以在这里使用${ew.customSqlSegment}-->
+    <!-- ${ew.customSqlSegment} 指代Wrapper的筛选条件，是以where开头的语句-->
     <select id="findPage" resultMap="userMap">
-        select `user`.*, question.id q_id, question.issue q_issue, question.answer q_answer,
-               question.category q_category, question.type q_type, question.share q_share
-        from `user` left join question on user.id = question.user_id
+        select `user`.*,
+               question.id       q_id,
+               question.issue    q_issue,
+               question.category q_category,
+               question.type     q_type,
+               question.share    q_share
+        from `user`
+                 left join question on user.id = question.q_user_id
+            ${ew.customSqlSegment}
     </select>
 </mapper>

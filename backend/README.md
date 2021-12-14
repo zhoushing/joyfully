@@ -7,19 +7,27 @@
 │   ├── java                            
 │   │   └── com.joyfully.springboot     # 源代码
 │   │       ├── common                  # 公用类
-│   │       │   ├── CorsConfig          # 跨域配置类
-│   │       │   ├── MybatisPlusConfig   # MyBatis-plus 分页配置
-│   │       │   └── Result              # 后端操作返回给前端的包装类
+│   │       │   ├── config              # 主要配置类
+│   │       │   ├── AuthInterceptor     # 身份验证拦截类
+│   │       │   ├── Result              # 后端操作返回给前端的包装类
+│   │       │   └── WebLogAspect        # 对 web 添加日志切面
+│   │       ├── component               # 组件类
+│   │       │   └── WebSocketServer     # Socket 服务器类
 │   │       ├── controller              # 控制器类
 │   │       ├── entity                  # 实体类
+│   │       ├── exception               # 异常类
+│   │       │   └── CustomException     # 自定义异常类
 │   │       ├── mapper                  # 同 DAO 层, 也就是数据访问层
 │   │       ├── service                 # 业务逻辑层
 │   │       │   ├── impl                # 具体实现类
 │   │       │   └── xxxService          # service 抽象接口
+│   │       ├── util                    # 工具类
+│   │       │   └── TokenUtils          # Token 工具类
 │   │       └── BackendApplication      # SpringBoot 启动类
 │   └── resources                       # 资源文件
+│       ├── mapper                      # 自定义的 mapper, 定义了一些自定义查询方法  
 │       ├── application.yml             # SpringBoot 配置文件
-│       └── mapper                      # 自定义的 mapper, 定义了一些自定义查询方法 
+│       └── logback-spring.xml          # logback 日志配置文件
 └── pom.xml                             # maven 包管理配置
 ```
 
@@ -42,6 +50,13 @@
 在 user 类中创建一个属性 questionList, 标记为 `@TableField(exist = false)`, 表示这个属性在表中不存在, 
 再在 mapper 文件中自定义 resultMap 返回类型并编写 SQL 语句
 
-### 解决的问题
+### 未解决的问题
 #### 无法对用户进行任意条件筛选了
 在解决问题 2 后, 因为自定义了查询方法, 造成任意条件筛选失效, 后序可能更改自定义查询方法
+
+## 待补充
+
+预计添加技术或框架：
+ - Spring Security 或者 Shiro 保证安全
+ - Redis 实现统计同时在线人数或者作为缓冲
+ - 尝试在 Linux 上挂载
