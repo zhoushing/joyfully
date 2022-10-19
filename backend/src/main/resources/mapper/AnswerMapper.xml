@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.joyfully.springboot.mapper.AnswerMapper">
+    <update id="updateById" parameterType="com.joyfully.springboot.entity.Answer">
+        update answer
+        <trim prefix="set" prefixOverrides=",">
+                  <if test="content != null">
+                      content = #{content}
+                  </if>
+                  <if test="praiseCount != null">
+                      , praise_count = #{praiseCount}
+                  </if>
+                  <if test="belittleCount != null">
+                      ,belittle_count = #{belittleCount}
+                  </if>
+        </trim>
+            where user_id = #{userId} and question_id = #{questionId}
+    </update>
+</mapper>

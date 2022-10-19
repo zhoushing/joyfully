@@ -1,30 +1,45 @@
 package com.joyfully.springboot.controller;
 
-import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.poi.excel.ExcelUtil;
-import cn.hutool.poi.excel.ExcelWriter;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.github.xiaoymin.knife4j.annotations.ApiOperationSupport;
+import com.github.xiaoymin.knife4j.annotations.DynamicParameter;
+import com.github.xiaoymin.knife4j.annotations.DynamicParameters;
 import com.joyfully.springboot.common.Result;
+import com.joyfully.springboot.controller.dto.FileOwnerInfo;
+import com.joyfully.springboot.controller.dto.QuestionerInfo;
+import com.joyfully.springboot.controller.dto.UserInfo;
 import com.joyfully.springboot.entity.User;
-import com.joyfully.springboot.service.impl.QuestionServiceImpl;
+import com.joyfully.springboot.enums.ExceptionEnum;
+import com.joyfully.springboot.enums.HttpCodeEnum;
+import com.joyfully.springboot.enums.RoleEnum;
+import com.joyfully.springboot.exception.UserException;
+import com.joyfully.springboot.service.BaseService;
+import com.joyfully.springboot.service.JedisService;
+import com.joyfully.springboot.service.LegalTestService;
+import com.joyfully.springboot.service.QuestionService;
 import com.joyfully.springboot.service.impl.UserServiceImpl;
-import com.joyfully.springboot.util.TokenUtils;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
+import io.swagger.annotations.ApiOperation;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
-import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.URLEncoder;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.IntStream;
 
 /**
  * 用户控制器
@@ -32,15 +47,40 @@ import java.util.*;
  * @author marx
  * @date 2021/07/31
  */
+@Api(tags = "用户操作模块")
 @RestController
 @RequestMapping("/user")
 public class UserController {
 
+    /**
+     * 用户服务
+     */
     @Resource(description = "userService")
     UserServiceImpl userService;
 
+    /**
+     * 问题服务
+     */
     @Resource(description = "questionService")
-    QuestionServiceImpl questionService;
+    QuestionService questionService;
+
+    /**
+     * jedis服务
+     */
+    @Autowired
+    JedisService jedisService;
+
+    /**
+     * 合法测试服务
+     */
+    @Resource
+    LegalTestService legalTestService;
+
+    /**
+     * 基础服务
+     */
+    @Resource
+    BaseService baseService;
 
     /**
      * 登录验证
@@ -48,23 +88,21 @@ public class UserController {
      * @param user 用户
      * @return {@link Result}<{@link ?}>
      */
+    @ApiOperation("登录")
     @PostMapping("/login")
-    public Result<?> login(@RequestBody User user) {
-        User res = userService.selectOne(Wrappers.<User>lambdaQuery().eq(User::getName, user.getName())
-                .eq(User::getPwd, user.getPwd()));
-        if (res == null) {
-            return Result.error("-1", "用户名不存在或者密码错误");
+    public Result<?> login(@RequestBody User user) throws UserException {
+        if (!jedisService.selectUserName(user.getName())) {
+            return Result.error(HttpCodeEnum.USER_ACCOUNT_NOT_FIND);
         }
 
-        // 生成token
-        String token = TokenUtils.getToken(res);
-        res.setToken(token);
+        UserInfo login = userService.login(user);
 
-        // 将密码替换
-        res.setPwd("********");
+        if (login == null) {
+            return Result.error(HttpCodeEnum.USER_ACCOUNT_NOT_FIND);
+        }
 
         // 将查找出来res用户信息附带给data，用于前端的信息展示
-        return Result.success(res);
+        return Result.success(login);
     }
 
     /**
@@ -73,77 +111,172 @@ public class UserController {
      * @param user 用户
      * @return {@link Result}<{@link ?}>
      */
+    @ApiImplicitParam(name = "user", value = "用户注册信息", dataType = "User", required = true)
+    @ApiOperation("注册")
+    @ApiOperationSupport(includeParameters = {"name", "pwd"})
     @PostMapping("/register")
-    public Result<?> register(@RequestBody User user) {
-        User selectOne = userService.selectOne(Wrappers.<User>lambdaQuery().eq(User::getName, user.getName()));
-        if (selectOne != null) {
-            return Result.error("-1", "用户名已存在");
+    public Result<?> register(@RequestBody User user) throws UserException {
+        if (!legalTestService.check(user.getName())) {
+            return Result.error(HttpCodeEnum.USERNAME_CONTAINS_SENSITIVE_WORDS);
         }
-        // 设置默认昵称为user加用户名
-        if (user.getNickName() == null) {
-            user.setNickName("user" + user.getName());
+
+        if (jedisService.selectUserName(user.getName())) {
+            return Result.error(HttpCodeEnum.USERNAME_ALREADY_EXISTS);
         }
-        int res = userService.insert(user);
-        if (res == 0) {
-            return Result.error("-1", "注册失败");
+
+        User register;
+
+        try {
+            register = userService.addUser(user, RoleEnum.NORMAL_USER);
+        } catch (Exception e) {
+            return Result.error(HttpCodeEnum.USER_REGISTER_ERROR);
         }
+
+        jedisService.insertUserName(register.getName());
+
         return Result.success();
     }
 
     /**
      * 保存
+     * 前端暂未编写新增用户功能
      *
      * @param user 用户
      * @return {@link Result}
      */
+    @ApiImplicitParam(name = "user", value = "新增用户信息", dataType = "User", required = true)
+    @ApiOperation("新增用户")
     @PostMapping("/save")
-    public Result<?> save(@RequestBody User user) {
-        User selectOne = userService.selectOne(Wrappers.<User>lambdaQuery().eq(User::getName, user.getName()));
-        if (selectOne != null) {
-            return Result.error("-1", "用户名重复");
+    @Deprecated
+    public Result<?> save(@RequestBody User user) throws UserException {
+        if (jedisService.selectUserName(user.getName())) {
+            return Result.error(HttpCodeEnum.USERNAME_ALREADY_EXISTS);
         }
 
-        // 没有用户名无法创建用户
-        if (user.getName() == null) {
-            return Result.error("-1", "用户名未填写！");
-        }
-        // 设置默认昵称为user加用户名
-        if (user.getNickName() == null) {
-            user.setNickName("user" + user.getName());
-        }
-        userService.insert(user);
+        jedisService.insertUserName(user.getName());
+
+        userService.save(user);
+
         return Result.success();
     }
 
     /**
-     * 删除
+     * 删除指定用户
      *
-     * @param id id
-     * @return {@link Result<?>}
+     * @param id 用户ID
+     * @return {@link Result}<{@link ?}>
      */
+    @ApiImplicitParam(name = "user", value = "要被删除用户的信息", dataType = "User", required = true)
+    @ApiOperation("删除用户")
+    @ApiOperationSupport(includeParameters = "id")
     @DeleteMapping("/delete/{id}")
-    public Result<?> delete(@PathVariable Integer id) {
-        // 一号特殊用户
-        if (id == 1) {
-            return Result.error("-1", "系统默认问题托管用户，不可删除！");
-        }
-        Map<String, Object> map = new HashMap<>();
-        map.put("user_id", id);
-        questionService.deleteByMap(map);
-        userService.deleteById(id);
+    @Transactional
+    public Result<?> delete(@PathVariable Integer id) throws UserException {
+        // 原来真的删除用户记录，但是现在只是伪删除，所以用户名缓存不删除
+        /*// 清除用户名缓存
+        jedisService.deleteUserName(user.getName());*/
+
+        userService.delete(id);
+
+        // 同时删除用户对应的问题（伪删除，仅删除用户问题关系）
+        questionService.delete(id);
         return Result.success();
     }
 
     /**
      * 更新
+     * 因为更新用户信息是不允许替换用户用户名的，所以此处不对缓存进行更替
      *
      * @param user 用户
      * @return {@link Result<?>}
      */
+    @ApiImplicitParam(name = "user", value = "更新用户的信息", dataType = "User", required = true)
+    @ApiOperation("更新用户")
+    @ApiOperationSupport(includeParameters = {"nickname", "birthday", "sex", "introduction"})
     @PutMapping("/update")
     public Result<?> update(@RequestBody User user) {
-        userService.updateById(user);
+        userService.update(user);
         return Result.success();
+    }
+
+    /**
+     * 更新用户信息
+     *
+     * @param userInfo 用户信息
+     * @return {@link Result}<{@link ?}>
+     */
+    @ApiImplicitParam(name = "user", value = "更新用户的信息", dataType = "User", required = true)
+    @ApiOperation("更新用户信息")
+    @ApiOperationSupport(includeParameters = {"avatar", "nickname", "birthday", "sex", "introduction"})
+    @PutMapping("/update/userInfo")
+    public Result<?> updateUserInfo(HttpServletRequest request, @RequestBody UserInfo userInfo) {
+        User user = baseService.getUser(request.getHeader("token"));
+        user.changeUserInfo(userInfo);
+
+        userService.update(user);
+        return Result.success();
+    }
+
+    /**
+     * 改变密码
+     *
+     * @param request 请求
+     * @param map     地图
+     * @return {@link Result}<{@link ?}>
+     */
+    @ApiImplicitParam(name = "map", value = "原密码和新密码", dataType = "Map", required = true)
+    @ApiOperation("更新用户密码")
+    @ApiOperationSupport(params = @DynamicParameters(properties = {
+            @DynamicParameter(name = "password", value = "原密码"),
+            @DynamicParameter(name = "newPass", value = "新密码")
+    }))
+    @PutMapping("/password")
+    public Result<?> changePassWord(HttpServletRequest request, @RequestBody Map<String, String> map) {
+        User user = baseService.getUser(request.getHeader("token"));
+        if (user == null) {
+            return Result.error(HttpCodeEnum.USER_ACCOUNT_NOT_FIND);
+        }
+
+        String password = map.get("password");
+        String newPass = map.get("newPass");
+        userService.updatePassWord(user, password, newPass);
+        return Result.success();
+    }
+
+    /**
+     * 得到用户信息通过token
+     *
+     * @return {@link Result}<{@link ?}>
+     */
+    @ApiOperation("获得用户信息")
+    @GetMapping
+    public Result<?> getUser(HttpServletRequest request) {
+        User user = baseService.getUser(request.getHeader("token"));
+        return Result.success(new UserInfo(user));
+    }
+
+    /**
+     * 得到用户信息通过昵称
+     *
+     * @return {@link Result}<{@link ?}>
+     */
+    @ApiOperation("通过昵称获得用户信息")
+    @GetMapping("/nickname")
+    public Result<?> getUser(@RequestParam String nickname) {
+        if (StrUtil.isBlank(nickname)) {
+            return Result.error(HttpCodeEnum.THE_NICKNAME_EMPTY);
+        }
+
+        LambdaQueryWrapper<User> wrapper = Wrappers.lambdaQuery();
+        wrapper.like(User::getNickname, nickname);
+
+        List<User> user = userService.list(wrapper);
+
+        List<UserInfo> userInfoList = new ArrayList<>();
+
+        user.forEach(temp -> userInfoList.add(new UserInfo(temp)));
+
+        return Result.success(userInfoList);
     }
 
     /**
@@ -154,59 +287,73 @@ public class UserController {
      * @param search   搜索
      * @return {@link Result<?>}
      */
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "pageNum", value = "查询的页数", dataType = "String", defaultValue = "1"),
+            @ApiImplicitParam(name = "pageSize", value = "查询的页大小", dataType = "String", defaultValue = "10"),
+            @ApiImplicitParam(name = "search", value = "筛选信息", dataType = "String", defaultValue = "")
+    })
+    @ApiOperation("查询用户列表")
     @GetMapping("/find")
     public Result<?> findPage(@RequestParam(defaultValue = "1") Integer pageNum,
                               @RequestParam(defaultValue = "10") Integer pageSize,
                               @RequestParam(defaultValue = "") String search) {
-        LambdaQueryWrapper<User> wrapper = Wrappers.<User>lambdaQuery();
+        LambdaQueryWrapper<User> wrapper = Wrappers.lambdaQuery();
+        // 要求账户未注销或者未被管理员删除
+        wrapper.eq(User::getLogout, 0);
+
         // search条件不为空时，执行模糊查询，否则查询所有
         if (StrUtil.isNotBlank(search)) {
-            wrapper.like(User::getNickName, search);
+            wrapper.like(User::getNickname, search);
         }
+
         Page<User> userPage = userService.findPage(new Page<>(pageNum, pageSize), wrapper);
 
-        System.out.println("userPage.getCurrent() = " + userPage.getCurrent());
-        System.out.println("userPage.getPages() = " + userPage.getPages());
-        System.out.println("userPage.getSize() = " + userPage.getSize());
-        System.out.println("userPage.getTotal() = " + userPage.getTotal());
-        System.out.println("userPage.getRecords().size() = " + userPage.getRecords().size());
-
         return Result.success(userPage);
-
     }
 
     /**
-     * Excel 导出用户信息
+     * 找到提问数最多的用户
      *
-     * @param response 响应
-     * @throws IOException ioexception
+     * @param limit 限制
+     * @return {@link Result}<{@link ?}>
      */
-    @GetMapping("/export")
-    public void export(HttpServletResponse response) throws IOException {
-        List<Map<String, Object>> list = CollUtil.newArrayList();
-        List<User> all = userService.selectList(null);
+    @ApiImplicitParam(name = "limit", value = "查找记录数", dataType = "Integer", defaultValue = "1")
+    @ApiOperation("找到提问数最多的用户")
+    @GetMapping("/questioner")
+    public Result<?> findBestQuestioner(@RequestParam(defaultValue = "1") Integer limit) {
+        List<QuestionerInfo> questionerInfoList = userService.findQuestioner(limit);
 
-        for (User user : all) {
-            Map<String, Object> row1 = new LinkedHashMap<>();
-            row1.put("id", user.getId());
-            row1.put("用户名", user.getName());
-            row1.put("昵称", user.getNickName());
-            row1.put("出生日期", user.getBirthday());
-            row1.put("性别", user.getSex());
-            row1.put("地址", user.getAddress());
-            list.add(row1);
-        }
+        return Result.success(questionerInfoList);
+    }
 
-        // 写 excel
-        ExcelWriter writer = ExcelUtil.getWriter(true);
-        writer.write(list, true);
-        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=utf-8");
-        String fileName = URLEncoder.encode("用户信息", "UTF-8");
-        response.setHeader("Content-Disposition", "attachment;filename=" + fileName + ".xlsx");
-        ServletOutputStream out = response.getOutputStream();
-        writer.flush(out, true);
-        writer.close();
-        IoUtil.close(System.out);
+    /**
+     * 找到回答数最多的用户
+     *
+     * @param limit 限制
+     * @return {@link Result}<{@link ?}>
+     */
+    @ApiImplicitParam(name = "limit", value = "查找记录数", dataType = "Integer", defaultValue = "1")
+    @ApiOperation("找到回答数最多的用户")
+    @GetMapping("/responder")
+    public Result<?> findBestResponder(@RequestParam(defaultValue = "1") Integer limit) {
+        List<QuestionerInfo> questionerInfoList = userService.findResponder(limit);
+
+        return Result.success(questionerInfoList);
+    }
+
+    /**
+     * 找到文件数最多的用户
+     *
+     * @param limit 限制
+     * @return {@link Result}<{@link ?}>
+     */
+    @ApiImplicitParam(name = "limit", value = "查找记录数", dataType = "Integer", defaultValue = "1")
+    @ApiOperation("找到文件数最多的用户")
+    @GetMapping("/fileowner")
+    public Result<?> findBestFileOwner(@RequestParam(defaultValue = "1") Integer limit) {
+        List<FileOwnerInfo> fileOwnerInfoList = userService.findFileOwner(limit);
+
+        return Result.success(fileOwnerInfoList);
     }
 
     /**
@@ -216,32 +363,23 @@ public class UserController {
      * @return {@link Result}<{@link ?}>
      * @throws IOException ioexception
      */
+    @ApiImplicitParam(name = "file", value = "要上传的用户信息", dataType = "org.springframework.web.multipart.MultipartFile", required = true)
+    @ApiOperation("用户信息导入")
     @PostMapping("/import")
     public Result<?> upload(MultipartFile file) throws IOException {
-        InputStream inputStream = file.getInputStream();
-        List<List<Object>> lists = ExcelUtil.getReader(inputStream).read(1);
-        List<User> saveList = new ArrayList<>();
-
-        for (List<Object> row : lists) {
-            User user = new User();
-            user.setName(row.get(1).toString());
-            user.setNickName(row.get(2).toString());
-            user.setBirthday(LocalDate.parse(row.get(3).toString().split(" ")[0],
-                    DateTimeFormatter.ofPattern("yyyy-MM-dd")));
-            user.setSex(row.get(5).toString());
-            user.setAddress(row.get(5).toString());
-            saveList.add(user);
-        }
-
-        for (User user : saveList) {
-            try {
-                userService.insert(user);
-            }
-            catch (Exception e) {
-                return Result.error("-1", "insert error");
-            }
-
-        }
+        userService.upload(file);
         return Result.success();
+    }
+
+    /**
+     * Excel 导出用户信息
+     *
+     * @param response 响应
+     * @throws IOException ioexception
+     */
+    @ApiOperation("用户信息导出")
+    @GetMapping("/export")
+    public void export(HttpServletResponse response) throws IOException {
+        userService.export(response);
     }
 }

@@ -27,9 +27,8 @@ public class WebConfig implements WebMvcConfigurer {
                 // 匹配路径
                 .addPathPatterns("/**")
                 // 排除路径
-                .excludePathPatterns("/user/login", "/user/register", "/admin/**", "/imserver/**", "/files/**", "/alipay/**",
-                        "/doc.html", "/webjars/**", "/swagger-resources/**");
-
+                .excludePathPatterns("/user/login", "/user/register", "/**/download/**", "/**/export", "/**/upload",
+                        "/doc.html", "/webjars/**", "/swagger-resources/**", "/favicon.ico", "/error");
     }
 
     /**

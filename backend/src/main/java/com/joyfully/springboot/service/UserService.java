@@ -3,9 +3,19 @@ package com.joyfully.springboot.service;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.IService;
+import com.joyfully.springboot.common.Result;
+import com.joyfully.springboot.controller.dto.FileOwnerInfo;
+import com.joyfully.springboot.controller.dto.QuestionerInfo;
+import com.joyfully.springboot.controller.dto.UserInfo;
 import com.joyfully.springboot.entity.Question;
 import com.joyfully.springboot.entity.User;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
@@ -17,137 +27,61 @@ import java.util.Map;
  * @author marx
  * @date 2021/07/31
  */
-public interface UserService {
+public interface UserService extends IService<User> {
     /**
-     * 插入一条记录
+     * 登录
      *
-     * @param entity 实体对象
-     * @return int
-     */
-    int insert(User entity);
-
-    /**
-     * 根据 ID 删除
-     *
-     * @param id 主键ID
-     * @return int
-     */
-    int deleteById(Serializable id);
-
-    /**
-     * 根据 columnMap 条件，删除记录
-     *
-     * @param columnMap 表字段 map 对象
-     * @return int
-     */
-    int deleteByMap(Map<String, Object> columnMap);
-
-    /**
-     * 根据 entity 条件，删除记录
-     *
-     * @param queryWrapper 实体对象封装操作类（可以为 null,里面的 entity 用于生成 where 语句）
-     * @return int
-     */
-    int delete(Wrapper<User> queryWrapper);
-
-    /**
-     * 删除（根据ID 批量删除）
-     *
-     * @param idList 主键ID列表(不能为 null 以及 empty)
-     * @return int
-     */
-    int deleteBatchIds(Collection<? extends Serializable> idList);
-
-    /**
-     * 根据 ID 修改
-     *
-     * @param entity 实体对象
-     * @return int
-     */
-    int updateById(User entity);
-
-    /**
-     * 根据 whereEntity 条件，更新记录
-     *
-     * @param entity        实体对象 (set 条件值,可以为 null)
-     * @param updateWrapper 实体对象封装操作类（可以为 null,里面的 entity 用于生成 where 语句）
-     * @return int
-     */
-    int update(User entity, Wrapper<User> updateWrapper);
-
-    /**
-     * 根据 ID 查询
-     *
-     * @param id 主键ID
+     * @param user 用户
      * @return {@link User}
      */
-    User selectById(Serializable id);
+    public UserInfo login(User user);
 
     /**
-     * 查询（根据ID 批量查询）
+     * 删除
      *
-     * @param idList 主键ID列表(不能为 null 以及 empty)
-     * @return {@link List<User>}
+     * @param id id
      */
-    List<User> selectBatchIds(Collection<? extends Serializable> idList);
+    public void delete(Integer id);
 
     /**
-     * 查询（根据 columnMap 条件）
+     * 更新
      *
-     * @param columnMap 表字段 map 对象
-     * @return {@link List<User>}
+     * @param user 用户
      */
-    List<User> selectByMap(Map<String, Object> columnMap);
+    public void update(User user);
 
     /**
-     * 根据 entity 条件，查询一条记录
+     * 更新密码
      *
-     * @param queryWrapper 实体对象封装操作类（可以为 null）
-     * @return {@link User}
+     * @param user     用户
+     * @param password 密码
+     * @param newPass  新通
      */
-    User selectOne(Wrapper<User> queryWrapper);
+    public void updatePassWord(User user, String password, String newPass);
 
     /**
-     * 根据 Wrapper 条件，查询总记录数
+     * 得到用户通过id
      *
-     * @param queryWrapper 实体对象封装操作类（可以为 null）
-     * @return {@link Integer}
+     * @param id id
+     * @return {@link Result}<{@link ?}>
      */
-    Integer selectCount(Wrapper<User> queryWrapper);
+    public User getUserById(Integer id);
 
     /**
-     * 根据 entity 条件，查询全部记录
+     * 下载
      *
-     * @param queryWrapper 实体对象封装操作类（可以为 null）
-     * @return {@link List<User>}
+     * @param response 响应
+     * @throws IOException ioexception
      */
-    List<User> selectList(Wrapper<User> queryWrapper);
+    public void export(HttpServletResponse response) throws IOException;
 
     /**
-     * 根据 Wrapper 条件，查询全部记录
+     * 上传
      *
-     * @param queryWrapper 实体对象封装操作类（可以为 null）
-     * @return {@link List<Map<String, Object>>}
+     * @param file 文件
+     * @throws IOException ioexception
      */
-    List<Map<String, Object>> selectMaps(Wrapper<User> queryWrapper);
-
-    /**
-     * 根据 Wrapper 条件，查询全部记录
-     * <p>注意： 只返回第一个字段的值</p>
-     *
-     * @param queryWrapper 实体对象封装操作类（可以为 null）
-     * @return {@link List<Object>}
-     */
-    List<Object> selectObjs(Wrapper<User> queryWrapper);
-
-    /**
-     * 根据 entity 条件，查询全部记录（并翻页）
-     *
-     * @param page         分页查询条件（可以为 RowBounds.DEFAULUser）
-     * @param queryWrapper 实体对象封装操作类（可以为 null）
-     * @return {@link P}
-     */
-    <P extends IPage<User>> P selectPage(P page, Wrapper<User> queryWrapper);
+    public void upload(MultipartFile file) throws IOException;
 
     /**
      * 查询所有信息
@@ -156,14 +90,29 @@ public interface UserService {
      * @param queryWrapper 查询包装
      * @return page
      */
-    Page<User>  findPage(Page page, Wrapper<User> queryWrapper);
+    Page<User> findPage(Page page, Wrapper<User> queryWrapper);
 
     /**
-     * 根据 Wrapper 条件，查询全部记录（并翻页）
+     * 发现问
      *
-     * @param page         分页查询条件
-     * @param queryWrapper 实体对象封装操作类
-     * @return {@link P}
+     * @param limit 限制
+     * @return {@link List}<{@link QuestionerInfo}>
      */
-    <P extends IPage<Map<String, Object>>> P selectMapsPage(P page, Wrapper<User> queryWrapper);
+    List<QuestionerInfo> findQuestioner(Integer limit);
+
+    /**
+     * 找到回答者
+     *
+     * @param limit 限制
+     * @return {@link List}<{@link QuestionerInfo}>
+     */
+    List<QuestionerInfo> findResponder(Integer limit);
+
+    /**
+     * 找到文件所有者
+     *
+     * @param limit 限制
+     * @return {@link List}<{@link QuestionerInfo}>
+     */
+    List<FileOwnerInfo> findFileOwner(Integer limit);
 }

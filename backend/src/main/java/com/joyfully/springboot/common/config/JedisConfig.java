@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 
@@ -49,9 +50,17 @@ public class JedisConfig {
         jedisPoolConfig.setMinIdle(minIdle);
         jedisPoolConfig.setMaxTotal(maxActive);
 
-        JedisPool jedisPool = new JedisPool(jedisPoolConfig, host, port, timeout, password);
+        JedisPool jedisPool = new JedisPool(jedisPoolConfig, host, port, timeout, null);
 
         logger.info("Jedis连接成功：" + host + ":" + port);
+
+        Jedis jedis = jedisPool.getResource();
+
+        if (jedis.exists("userNames")) {
+            jedis.del("userNames");
+        }
+
+        jedis.close();
 
         return jedisPool;
     }

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.joyfully.springboot.mapper.FileMapper">
+    <resultMap id="fileMap" type="com.joyfully.springboot.entity.File">
+        <result property="UUID" column="uuid"/>
+        <result property="name" column="name"/>
+        <result property="type" column="type"/>
+        <result property="userId" column="user_id"/>
+        <result property="praiseCount" column="praise_count"/>
+        <result property="belittleCount" column="belittle_count"/>
+        <association property="fileOwnerInfo" javaType="com.joyfully.springboot.controller.dto.FileOwnerInfo">
+            <result column="user_id" property="userId"/>
+            <result column="nickname" property="nickname"/>
+            <result column="introduction" property="introduction"/>
+            <result column="avatar" property="avatar"/>
+            <result column="file_count" property="fileCount"/>
+        </association>
+    </resultMap>
+
+    <select id="queryAllOrderByPraiseCount" resultMap="fileMap">
+        select uuid, f1.name name , type, user_id, praise_count, belittle_count,
+               nickname, introduction, avatar,
+               (select count(*) from file f2 where f2.user_id = u.id) file_count
+            from file f1 left join user u on u.id = f1.user_id
+            order by praise_count desc
+            limit #{limit}
+    </select>
+</mapper>

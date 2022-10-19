@@ -2,13 +2,8 @@ package com.joyfully.springboot.mapper;
 
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.core.toolkit.Constants;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.joyfully.springboot.entity.Question;
-import com.joyfully.springboot.entity.User;
 import org.apache.ibatis.annotations.Param;
-import org.apache.poi.ss.formula.functions.T;
 
 import java.util.List;
 
@@ -19,14 +14,14 @@ import java.util.List;
  * @date 2021/07/31
  */
 public interface QuestionMapper extends BaseMapper<Question> {
-
     /**
-     * 查询所有类别通过userid
+     * 查询所有
      *
-     * @param userId 用户id
-     * @return {@link List}<{@link String}>
+     * @param questionIdList 问题id列表
+     * @param search         搜索
+     * @return {@link List}<{@link Question}>
      */
-    List<String> queryAllCategoryByUserId(Integer userId);
+    List<Question> queryAll(@Param("questionIdList") List<Integer> questionIdList, @Param("search") String search);
 
     /**
      * 查询限制条数随机问题
@@ -37,20 +32,10 @@ public interface QuestionMapper extends BaseMapper<Question> {
     List<Question> queryRandomLimit(Integer limit);
 
     /**
-     * 查询指定用户的限制条数随机问题
+     * 查询限制条数根据好评数排序
      *
      * @param limit 限制
-     * @param id    id
-     * @return {@link List}<{@link Question}>
+     * @return {@link List<Question>}
      */
-    List<Question> queryRandomLimitById(Integer limit, Integer id);
-
-    /**
-     * 查询所有信息
-     *
-     * @param page         查询的页面
-     * @param queryWrapper 查询包装
-     * @return page
-     */
-    Page<Question> findPage(Page<Question> page, @Param(Constants.WRAPPER) Wrapper<Question> queryWrapper);
+    List<Question> queryByPraise(Integer limit);
 }

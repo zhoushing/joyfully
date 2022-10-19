@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author marx
  * @date 2021/11/11
  */
-@ServerEndpoint(value = "/imserver/{nickName}")
+@ServerEndpoint(value = "/imserver/{nickname}")
 @Component
 public class WebSocketServer {
     /**
@@ -36,22 +36,22 @@ public class WebSocketServer {
      * 连接成功的方法
      *
      * @param session  会话
-     * @param nickName 用户昵称
+     * @param nickname 用户昵称
      */
     @OnOpen
-    public void onOpen(Session session, @PathParam("nickName") String nickName) {
-        SESSION_MAP.put(nickName, session);
-        logger.info("有新用户加入, nickName={}, 当前在线人数为：{}", nickName, SESSION_MAP.size());
+    public void onOpen(Session session, @PathParam("nickname") String nickname) {
+        SESSION_MAP.put(nickname, session);
+        logger.info("有新用户加入, nickname={}, 当前在线人数为：{}", nickname, SESSION_MAP.size());
         JSONObject result = new JSONObject();
         JSONArray array = new JSONArray();
         result.set("users", array);
         for (String key : SESSION_MAP.keySet()) {
             JSONObject jsonObject = new JSONObject();
-            jsonObject.set("nickName", key);
-            /* {"nickName", "zhang", "nickName": "admin"}*/
+            jsonObject.set("nickname", key);
+            /* {"nickname", "zhang", "nickname": "admin"}*/
             array.add(jsonObject);
         }
-        /*{"users":[{"nickName": "zhang"},{"nickName": "admin"}]}*/
+        /*{"users":[{"nickname": "zhang"},{"nickname": "admin"}]}*/
         // 后台发送消息给所有的客户端
         sendAllMessage(JSONUtil.toJsonStr(result));
     }
@@ -60,12 +60,12 @@ public class WebSocketServer {
      * 连接关闭调用的方法
      *
      * @param session  会话
-     * @param nickName 用户昵称
+     * @param nickname 用户昵称
      */
     @OnClose
-    public void onClose(Session session, @PathParam("nickName") String nickName) {
-        SESSION_MAP.remove(nickName);
-        logger.info("一个连接关闭, 移除username={}的用户 session, 当前在线人数为：{}", nickName, SESSION_MAP.size());
+    public void onClose(Session session, @PathParam("nickname") String nickname) {
+        SESSION_MAP.remove(nickname);
+        logger.info("一个连接关闭, 移除username={}的用户 session, 当前在线人数为：{}", nickname, SESSION_MAP.size());
     }
 
     /**
@@ -76,8 +76,8 @@ public class WebSocketServer {
      * @param message 客户端发送过来的消息
      */
     @OnMessage
-    public void onMessage(String message, Session session, @PathParam("nickName") String nickName) {
-        logger.info("服务端收到用户 nickName={}的消息：{}", nickName, message);
+    public void onMessage(String message, Session session, @PathParam("nickname") String nickname) {
+        logger.info("服务端收到用户 nickname={}的消息：{}", nickname, message);
         JSONObject object = JSONUtil.parseObj(message);
 
         // to表示发送给哪个用户，比如 admin
@@ -94,13 +94,13 @@ public class WebSocketServer {
             // {"from": "zhang", "text": "hello"}
 
             JSONObject jsonObject = new JSONObject();
-            jsonObject.set("from", nickName);
+            jsonObject.set("from", nickname);
             jsonObject.set("text", text);
             this.sendMessage(jsonObject.toString(), toSession);
-            logger.info("发送给用户 nickName={}, 消息：{}", toUsername, jsonObject.toString());
+            logger.info("发送给用户 nickname={}, 消息：{}", toUsername, jsonObject.toString());
         }
         else {
-            logger.info("发送失败, 未找到用户 nickName={}的session", toUsername);
+            logger.info("发送失败, 未找到用户 nickname={}的session", toUsername);
         }
     }
 

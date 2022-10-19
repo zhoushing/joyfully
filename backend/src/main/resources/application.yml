@@ -17,7 +17,7 @@ spring:
 
   # 本地运行时请将此处删除
   profiles:
-    active: prod
+    active: test
 
   # 整合 Redis
   redis:
@@ -30,12 +30,19 @@ spring:
         max-active: 10
         min-idle: 2
     timeout: 2000
+    lettuce:
+        pool:
+         max-active: 30
+         max-idle: 6
+         min-idle: 2
+         max-wait: 1000
+        shutdown-timeout: 100
 
-# 文件存储的位置
+# 文件存储的位置（本地存储，已弃用）
 file:
   ip: localhost
   # 目标路径
-  path:
+  path: /files/
 
 logging:
   level:
@@ -44,9 +51,33 @@ logging:
     # 指定位置
     name: ./logs/core.log
 
+# pagehelper分页插件配置
+pagehelper:
+  helperDialect: mysql
+  reasonable: true
+  supportMethodsArguments: true
+  params: count=countSql
 
+# 敏感词检测配置
+sensitive:
+  path: D:/idea/project/springboot-vue-demo/sensitive/sexWords.txt
+  # 单字符
+  replace: "*"
 
-
+tencent-cos:
+  # 存储桶地址
+  baseUrl:
+  appId:
+  accessKey:
+  secretKey:
+  # 存储桶所在地区名
+  regionName:
+  # 存储桶名
+  bucketName:
+  # 文件存储路径
+  folderPrefix:
+  # 文件最大大小/MB
+  maxSize:
 
 
 

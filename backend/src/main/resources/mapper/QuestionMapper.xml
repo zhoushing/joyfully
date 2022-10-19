@@ -3,34 +3,66 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.joyfully.springboot.mapper.QuestionMapper">
     <resultMap id="questionMap" type="com.joyfully.springboot.entity.Question">
-        <result property="id" column="id"/>
-        <result property="issue" column="issue"/>
-        <result property="category" column="category"/>
-        <result property="type" column="type"/>
-        <result property="qUserId" column="q_user_id"/>
-        <result property="share" column="share"/>
-        <collection property="answerList" javaType="ArrayList" ofType="com.joyfully.springboot.entity.Answer">
-            <result column="a_id" property="id"/>
-            <result column="a_content" property="content"/>
+        <result property="id" column="q_id"/>
+        <result property="issue" column="q_issue"/>
+        <result property="type" column="q_type"/>
+        <result property="share" column="q_share"/>
+        <result property="userId" column="q_user_id"/>
+        <result property="praiseCount" column="q_praise"/>
+        <result property="belittleCount" column="q_belittle"/>
+        <result property="attentionCount" column="q_attention"/>
+        <association property="questionerInfo" javaType="com.joyfully.springboot.controller.dto.QuestionerInfo">
+            <result property="userId" column="q_user_id"/>
+            <result property="avatar" column="q_u_avatar"/>
+            <result property="nickname" column="q_u_nickname"/>
+            <result property="introduction" column="q_u_introduction"/>
+            <result property="answerCount" column="q_u_answer_count"/>
+            <result property="questionCount" column="q_u_question_count"/>
+        </association>
+        <collection property="answerList" javaType="ArrayList" ofType="com.joyfully.springboot.controller.dto.AnswerInfo">
+            <result column="q_id" property="questionId"/>
             <result column="a_user_id" property="userId"/>
-            <result column="user_name" property="userName"/>
-            <result column="id" property="questionId"/>
+            <result column="a_user_nickname" property="userNickname"/>
+            <result column="a_content" property="content"/>
+            <result column="a_praise" property="praiseCount"/>
+            <result column="a_belittle" property="belittleCount"/>
+        </collection>
+        <collection property="categoryList" javaType="ArrayList" ofType="com.joyfully.springboot.entity.Category">
+            <result column="c_id" property="id"/>
+            <result column="c_name" property="name"/>
         </collection>
     </resultMap>
-    <select id="queryAllCategoryByUserId" resultType="java.lang.String">
-        select category
-        from `question`
-        where q_user_id = #{userId}
+
+    <select id="queryAll" resultMap="questionMap">
+        select q.id q_id, q.issue q_issue, q.type q_type, q.share q_share, q.user_id q_user_id, q.praise_count q_praise, q.belittle_count q_belittle, q.attention_count q_attention,
+                a.content a_content, a.praise_count a_praise, a.belittle_count a_belittle, a.user_id a_user_id,
+                c.id c_id, c.name c_name,
+                nickname a_user_nickname
+        from question q
+                left join question_category qc on q.id = qc.question_id
+                left join category c on qc.category_id = c.id
+                left join answer a on q.id = a.question_id
+                left join user u on u.id = a.user_id
+        <where>
+            <if test="questionIdList != null">
+                q.id in
+                    <foreach collection="questionIdList" open="(" separator="," close=")" item="item">
+                        #{item}
+                    </foreach>
+            </if>
+            <if test="search != null and search != ''">
+                and c.name like '#{search}%'
+            </if>
+        </where>
+        order by q.id
     </select>
-    <select id="queryRandomLimit" resultMap="questionMap">
+
+    <select id="queryRandomLimit" resultType="com.joyfully.springboot.entity.Question">
         SELECT q1.*,
-               `answer`.`id`      a_id,
-               `answer`.`content` a_content,
-               `answer`.`user_id` a_user_id,
-               `name`             user_name
+               `answer`.`content` content,
+               `answer`.`user_id` user_id
         FROM `question` AS q1
                  left join `answer` on `answer`.question_id = q1.id
-                 left join `user` on `answer`.user_id = `user`.id
                  JOIN (SELECT ROUND(RAND() * ((SELECT MAX(id) FROM `question`) - (SELECT MIN(id) FROM `question`)) +
                                     (SELECT MIN(id) FROM `question`)) AS id) AS q2
         WHERE q1.id >= q2.id
@@ -38,51 +70,25 @@
         ORDER BY q1.id
         LIMIT #{limit};
     </select>
-    <select id="queryRandomLimitById" resultMap="questionMap">
-        select q1.*,
-               `answer`.`id`      a_id,
-               `answer`.`content` a_content,
-               `answer`.`user_id` a_user_id,
-               `name`             user_name
-        FROM `question` AS q1
-                 left join `answer` on `answer`.question_id = q1.id
-                 left join `user` on `answer`.user_id = `user`.id
-                 JOIN (SELECT ROUND(RAND() * ((SELECT MAX(id) FROM `question`) - (SELECT MIN(id) FROM `question`))
-            + (SELECT MIN(id) FROM `question`)) AS id) AS q2
 
-        WHERE q1.id >= q2.id
-          and q1.q_user_id = #{id}
-        ORDER BY q1.id
-        LIMIT #{limit};
+    <select id="queryByPraise" resultMap="questionMap">
+        select q.id q_id, q.issue q_issue, q.type q_type, q.share q_share, q.user_id q_user_id, q.praise_count q_praise, q.belittle_count q_belittle, q.attention_count q_attention,
+               a.content a_content, a.praise_count a_praise, a.belittle_count a_belittle, a.user_id a_user_id,
+               c.id c_id, c.name c_name,
+               u.nickname a_user_nickname,
+               q_u.nickname q_u_nickname, q_u.introduction q_u_introduction, q_u.avatar q_u_avatar,
+               (select count(*) from answer a2 where q_u.id = a2.user_id) q_u_answer_count,
+               (select count(*) from question q2 where q_u.id = q2.user_id) q_u_question_count
+        from question q
+                left join question_category qc on q.id = qc.question_id
+                left join category c on qc.category_id = c.id
+                left join answer a on q.id = a.question_id
+                left join user u on u.id = a.user_id
+                left join user q_u on q_u.id = q.user_id
+        ORDER BY q.praise_count desc
+
+        LIMIT #{limit}
     </select>
 
-    <!-- 此处的情况和UserMapper.xml类似，因为实际业务要求，此处需要用到where条件筛选-->
-    <!--但是${ew.customSqlSegment}自带where前缀，怎么办呢？-->
-    <!--此处笔者采用的办法是：-->
-    <!--1、<where>节点：提供预置where前缀，防止Wrapper条件筛选为空时，同时也会去除前置的and，方便好用-->
-    <!--2、<trim>节点：使用节点中的prefixOverrides指定要去除的字符串，这样就去除了${ew.customSqlSegment}中自带的where关键字-->
-    <!--<select id="findPage" resultMap="questionMap">
-        select `question`.*, `answer`.`id` a_id, `answer`.`content` a_content,
-               `answer`.`user_id` a_user_id, `name` user_name
-        from `question` left join `answer` on `answer`.question_id = `question`.id, `user`
-        <where>
-            <trim prefixOverrides="where">
-                ${ew.customSqlSegment} and `answer`.user_id = `user`.id
-            </trim>
-        </where>
-    </select>-->
-
-    <!--findPage2.0，直接采用左连接+左连接来连接question、answer、user表-->
-    <select id="findPage" resultMap="questionMap">
-        select `question`.*,
-               `answer`.`id`      a_id,
-               `answer`.`content` a_content,
-               `answer`.`user_id` a_user_id,
-               `name`             user_name
-        from `question`
-                 left join `answer` on `answer`.question_id = `question`.id
-                 left join `user` on `answer`.user_id = `user`.id
-            ${ew.customSqlSegment}
-    </select>
 
 </mapper>

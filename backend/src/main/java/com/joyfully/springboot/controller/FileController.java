@@ -1,19 +1,26 @@
 package com.joyfully.springboot.controller;
 
-import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.IdUtil;
-import cn.hutool.core.util.StrUtil;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.joyfully.springboot.common.Result;
 import com.joyfully.springboot.entity.File;
-import org.springframework.beans.factory.annotation.Value;
+import com.joyfully.springboot.entity.User;
+import com.joyfully.springboot.exception.CustomException;
+import com.joyfully.springboot.service.BaseService;
+import com.joyfully.springboot.service.FileService;
+import com.joyfully.springboot.util.COSClientUtil;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
+import io.swagger.annotations.ApiOperation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.net.URLEncoder;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -22,21 +29,21 @@ import java.util.List;
  * @author marx
  * @date 2021/08/03
  */
+@Api(tags = "文件操作模块")
 @RestController
-@RequestMapping("/files")
+@RequestMapping("/file")
 public class FileController {
-
-    @Value("${file.ip}")
-    private String ip;
-
-    @Value("${server.port}")
-    private String port;
+    /**
+     * 文件服务
+     */
+    @Resource(name = "fileService")
+    FileService fileService;
 
     /**
-     * 指定文件存取路径
+     * 基础服务
      */
-    @Value("${file.path}")
-    private String path;
+    @Resource
+    BaseService baseService;
 
     /**
      * 上传接口
@@ -45,23 +52,34 @@ public class FileController {
      * @return {@link Result <?>}
      * @throws IOException ioexception
      */
+    @ApiImplicitParam(name = "file", value = "要上传的文件", dataType = "org.springframework.web.multipart.MultipartFile", required = true)
+    @ApiOperation("文件上传")
     @PostMapping("/upload")
-    public Result<?> upload(MultipartFile file) throws IOException {
-        // 获取源文件的名称
-        String originalFilename = file.getOriginalFilename();
+    public Result<?> upload(MultipartFile file, HttpServletRequest request) throws IOException {
+        System.out.println("file.getName() = " + file.getName());
 
-        // 定义文件的唯一标识（前缀）
-        String uuid = IdUtil.fastSimpleUUID();
+        String token = request.getHeader("token");
 
-        // 获取上传的目标路径
-        String rootFilePath = System.getProperty("user.dir") + path
-                + uuid + "_" + originalFilename;
+        Integer userId = baseService.getUserId(token);
+        String upload = fileService.upload(file, userId);
 
-        // 将文件写入上传的路径
-        FileUtil.writeBytes(file.getBytes(), rootFilePath);
+        return Result.success(upload);
+    }
 
-        // 返回结果
-        return Result.success("http://" + ip + ":" + port + "/files/download/" + uuid);
+    /**
+     * 删除
+     *
+     * @param uuid uuid
+     * @return {@link Result}<{@link ?}>
+     */
+    @ApiImplicitParam(name = "uuid", value = "要删除文件的uuid", dataType = "String", required = true)
+    @ApiOperation("文件删除")
+    @DeleteMapping("/{uuid}")
+    @Transactional
+    public Result<?> delete(@PathVariable String uuid) {
+        // 删除在数据库中的数据，实际文件不删除
+        fileService.removeById(uuid);
+        return Result.success();
     }
 
     /**
@@ -71,70 +89,94 @@ public class FileController {
      * @param flag     标记
      * @return {@link Result<?>}
      */
+    @ApiImplicitParam(name = "flag", value = "要下载的文件标志", dataType = "String", required = true)
+    @ApiOperation("文件下载通过限定UUID")
     @GetMapping("/download/{flag}")
-    public Result<?> getFiles(@PathVariable String flag, HttpServletResponse response) {
-        // 新建一个输出流对象
-        OutputStream os;
+    public Result<?> getFileByUUID(@PathVariable String flag, HttpServletResponse response) throws CustomException {
+        fileService.getFileByUUID(flag, response);
+        return Result.success();
+    }
 
-        // 文件存储的根路径
-        String rootFilePath = System.getProperty("user.dir") + path;
-
-        // 获取所有的文件名称
-        List<String> fileNames = FileUtil.listFileNames(rootFilePath);
-
-        // 找到和参数一致的文件
-        String fileName = fileNames.stream().filter(name -> name.contains(flag)).
-                findAny().orElse("");
-
-        try {
-            if (StrUtil.isNotEmpty(fileName)) {
-                response.addHeader("Content-Disposition", "attachment;filename="
-                        + URLEncoder.encode(fileName, "UTF-8"));
-
-                response.setContentType("application/octet-stream");
-
-                // 通过文件路径读取文件字节流
-                byte[] bytes = FileUtil.readBytes(rootFilePath + fileName);
-
-                // 通过输出流返回文件
-                os = response.getOutputStream();
-                os.write(bytes);
-                os.flush();
-                os.close();
-            }
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-            return Result.error("-1", "文件下载失败");
-        }
-
+    /**
+     * 得到文件通过完整名字
+     *
+     * @param response 响应
+     * @param fullName 文件全名
+     * @return {@link Result}<{@link ?}>
+     */
+    @ApiImplicitParam(name = "fullName", value = "要下载的文件名", dataType = "String", required = true)
+    @ApiOperation("文件下载通过全名")
+    @GetMapping("/downloadByFullName/{fullName}")
+    public Result<?> getFileByFullName(@PathVariable String fullName, HttpServletResponse response) throws CustomException {
+        fileService.getFileByFullName(fullName, response);
         return Result.success();
     }
 
     /**
      * 获取文件信息
      *
+     * @param pageNum  页面num
+     * @param pageSize 页面大小
+     * @param search   搜索
      * @return {@link Result}<{@link ?}>
      */
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "pageNum", value = "查询的页数", dataType = "String", defaultValue = "1"),
+            @ApiImplicitParam(name = "pageSize", value = "查询的页大小", dataType = "String", defaultValue = "10"),
+            @ApiImplicitParam(name = "search", value = "筛选信息", dataType = "String", defaultValue = "")
+    })
+    @ApiOperation("获取文件信息")
     @GetMapping("/getFilesInfo")
     @ResponseBody
-    public Result<?> getFilesInfo() {
-        // 文件存储的根路径
-        String rootFilePath = System.getProperty("user.dir") + path;
-
-        // 获取所有的文件名称
-        List<String> fileNames = FileUtil.listFileNames(rootFilePath);
-
-        List<File> files = new ArrayList<>();
-
-        for (String name : fileNames) {
-            String fileId = name.split("_")[0];
-            String fileName = name.split("_")[1].split("\\.")[0];
-            String fileType = name.split("_")[1].split("\\.")[1];
-            File file = new File(fileId, fileName, fileType);
-            files.add(file);
-        }
-
-        return Result.success(files);
+    public Result<?> getFilesInfo(@RequestParam(defaultValue = "1") Integer pageNum,
+                                  @RequestParam(defaultValue = "10") Integer pageSize,
+                                  @RequestParam(defaultValue = "") String search) {
+        Page<File> filesInfo = fileService.getFilesInfo(pageNum, pageSize, search);
+        return Result.success(filesInfo);
     }
+
+    /**
+     * 获取文件信息
+     *
+     * @param pageNum  页面num
+     * @param pageSize 页面大小
+     * @param search   搜索
+     * @return {@link Result}<{@link ?}>
+     */
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "pageNum", value = "查询的页数", dataType = "String", defaultValue = "1"),
+            @ApiImplicitParam(name = "pageSize", value = "查询的页大小", dataType = "String", defaultValue = "10"),
+            @ApiImplicitParam(name = "search", value = "筛选信息", dataType = "String", defaultValue = "")
+    })
+    @ApiOperation("获取文件信息")
+    @GetMapping("/getFilesInfo/user")
+    @ResponseBody
+    public Result<?> getFilesInfoByUser(@RequestParam(defaultValue = "1") Integer pageNum,
+                                        @RequestParam(defaultValue = "10") Integer pageSize,
+                                        @RequestParam(defaultValue = "") String search,
+                                        HttpServletRequest request) {
+        String token = request.getHeader("token");
+        Integer userId = baseService.getUserId(token);
+        Page<File> filesInfo = fileService.getFilesInfo(pageNum, pageSize, search, userId);
+        return Result.success(filesInfo);
+    }
+
+    /**
+     * 获取文件列表按点赞数
+     *
+     * @param limit 限制
+     * @return {@link Result}<{@link ?}>
+     */
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "limit", value = "查询的文件数", dataType = "Integer", defaultValue = "5")
+    })
+    @ApiOperation("获取文件列表按点赞数")
+    @GetMapping("/findByPraise")
+    @ResponseBody
+    public Result<?> getFilesOrderByPraiseCount(@RequestParam Integer limit) {
+        List<File> filesInfo = fileService.getFilesInfoOrderByPraiseCount(limit);
+        return Result.success(filesInfo);
+    }
+
+
 }

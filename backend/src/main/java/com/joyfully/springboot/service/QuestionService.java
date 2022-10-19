@@ -1,13 +1,17 @@
 package com.joyfully.springboot.service;
 
-import com.baomidou.mybatisplus.core.conditions.Wrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.service.IService;
+import com.github.pagehelper.Page;
+import com.github.pagehelper.PageInfo;
+import com.joyfully.springboot.common.Result;
+import com.joyfully.springboot.entity.Category;
 import com.joyfully.springboot.entity.Question;
+import com.joyfully.springboot.entity.QuestionCategory;
+import com.joyfully.springboot.entity.UserQuestion;
+import com.joyfully.springboot.enums.HttpCodeEnum;
+import org.springframework.web.bind.annotation.RequestParam;
 
-import java.io.Serializable;
-import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
 /**
  * 问题服务
@@ -15,170 +19,99 @@ import java.util.Map;
  * @author marx
  * @date 2021/07/31
  */
-public interface QuestionService {
+public interface QuestionService extends IService<Question>, EvaluationTargetService {
     /**
-     * 插入一条记录
+     * 保存问题
      *
-     * @param entity 实体对象
+     * @param question 问题
      * @return int
      */
-    int insert(Question entity);
+    @Override
+    public boolean save(Question question);
+
 
     /**
-     * 根据 ID 删除
+     * 添加关注
      *
-     * @param id 主键ID
-     * @return int
+     * @param userQuestion 用户问题
+     * @return boolean
      */
-    int deleteById(Serializable id);
+    public boolean addAttention(UserQuestion userQuestion);
 
     /**
-     * 根据 columnMap 条件，删除记录
+     * 添加类别
      *
-     * @param columnMap 表字段 map 对象
-     * @return int
+     * @param questionId   问题id
+     * @param categoryList 类别列表
      */
-    int deleteByMap(Map<String, Object> columnMap);
+    public void addCategory(Integer questionId, List<Category> categoryList);
 
     /**
-     * 根据 entity 条件，删除记录
+     * 添加类别
      *
-     * @param queryWrapper 实体对象封装操作类（可以为 null,里面的 entity 用于生成 where 语句）
-     * @return int
+     * @param questionId 问题id
+     * @param category   类别
      */
-    int delete(Wrapper<Question> queryWrapper);
+    public void addCategory(Integer questionId, Category category);
 
     /**
-     * 删除（根据ID 批量删除）
+     * 删除指定问题
      *
-     * @param idList 主键ID列表(不能为 null 以及 empty)
-     * @return int
+     * @param id id
+     * @return {@link Result<?>}
      */
-    int deleteBatchIds(Collection<? extends Serializable> idList);
+    public void delete(Integer id);
 
     /**
-     * 根据 ID 修改
+     * 删除通过用户id
      *
-     * @param entity 实体对象
-     * @return int
+     * @param id id
      */
-    int updateById(Question entity);
+    public void deleteByUserId(Integer id);
 
     /**
-     * 根据 whereEntity 条件，更新记录
+     * 删除类别
      *
-     * @param entity        实体对象 (set 条件值,可以为 null)
-     * @param updateWrapper 实体对象封装操作类（可以为 null,里面的 entity 用于生成 where 语句）
-     * @return int
+     * @param questionCategory 问题类别
      */
-    int update(Question entity, Wrapper<Question> updateWrapper);
+    public void deleteCategory(QuestionCategory questionCategory);
 
     /**
-     * 查询所有类别的用户id
+     * 更新问题
      *
-     * @param userId 用户id
-     * @return {@link List}<{@link String}>
+     * @param question 问题
+     * @return {@link int}
      */
-    List<String> queryAllCategoryByUserId(Integer userId);
+    public void update(Question question);
 
     /**
-     * 查询限制条数随机问题
+     * 找到页面
+     * 查询问题列表
+     *
+     * @param pageNum  当前页面位置
+     * @param pageSize 页面大小
+     * @param userId   用户id
+     * @return {@link PageInfo}<{@link Question}>
+     */
+    public PageInfo<Question> findPage(Integer pageNum, Integer pageSize, Integer userId);
+
+    /**
+     * 找到页面
+     * 查询问题列表
+     *
+     * @param pageNum  当前页面位置
+     * @param pageSize 页面大小
+     * @param userId   用户id
+     * @param search   搜索
+     * @return {@link PageInfo}<{@link Question}>
+     */
+    public PageInfo<Question> findPage(Integer pageNum, Integer pageSize, Integer userId, String search);
+
+    /**
+     * 查询限制条数根据好评数排序
      *
      * @param limit 限制
      * @return {@link List<Question>}
      */
-    List<Question> queryRandomLimit(Integer limit);
-
-    /**
-     * 查询指定用户的限制条数随机问题
-     *
-     * @param limit 限制
-     * @param id    id
-     * @return {@link List}<{@link Question}>
-     */
-    List<Question> queryRandomLimitById(Integer limit, Integer id);
-
-    /**
-     * 根据 ID 查询
-     *
-     * @param id 主键ID
-     * @return {@link Question}
-     */
-    Question selectById(Serializable id);
-
-    /**
-     * 查询（根据ID 批量查询）
-     *
-     * @param idList 主键ID列表(不能为 null 以及 empty)
-     * @return {@link List<Question>}
-     */
-    List<Question> selectBatchIds(Collection<? extends Serializable> idList);
-
-    /**
-     * 查询（根据 columnMap 条件）
-     *
-     * @param columnMap 表字段 map 对象
-     * @return {@link List<Question>}
-     */
-    List<Question> selectByMap(Map<String, Object> columnMap);
-
-    /**
-     * 根据 entity 条件，查询一条记录
-     *
-     * @param queryWrapper 实体对象封装操作类（可以为 null）
-     * @return {@link Question}
-     */
-    Question selectOne(Wrapper<Question> queryWrapper);
-
-    /**
-     * 根据 Wrapper 条件，查询总记录数
-     *
-     * @param queryWrapper 实体对象封装操作类（可以为 null）
-     * @return {@link Integer}
-     */
-    Integer selectCount(Wrapper<Question> queryWrapper);
-
-    /**
-     * 根据 entity 条件，查询全部记录
-     *
-     * @param queryWrapper 实体对象封装操作类（可以为 null）
-     * @return {@link List<Question>}
-     */
-    List<Question> selectList(Wrapper<Question> queryWrapper);
-
-    /**
-     * 根据 Wrapper 条件，查询全部记录
-     *
-     * @param queryWrapper 实体对象封装操作类（可以为 null）
-     * @return {@link List<Map<String, Object>>}
-     */
-    List<Map<String, Object>> selectMaps(Wrapper<Question> queryWrapper);
-
-    /**
-     * 根据 Wrapper 条件，查询全部记录
-     * <p>注意： 只返回第一个字段的值</p>
-     *
-     * @param queryWrapper 实体对象封装操作类（可以为 null）
-     * @return {@link List<Object>}
-     */
-    List<Object> selectObjs(Wrapper<Question> queryWrapper);
-
-    /**
-     * 根据 entity 条件，查询全部记录（并翻页）
-     *
-     * @param page         分页查询条件（可以为 RowBounds.DEFAULQuestion）
-     * @param queryWrapper 实体对象封装操作类（可以为 null）
-     * @return {@link P}
-     */
-    <P extends IPage<Question>> P selectPage(P page, Wrapper<Question> queryWrapper);
-
-    /**
-     * 根据 Wrapper 条件，查询全部记录（并翻页）
-     *
-     * @param page         分页查询条件
-     * @param queryWrapper 实体对象封装操作类
-     * @return {@link P}
-     */
-    <P extends IPage<Map<String, Object>>> P selectMapsPage(P page, Wrapper<Question> queryWrapper);
-
+    public List<Question> queryByPraise(Integer limit);
 }

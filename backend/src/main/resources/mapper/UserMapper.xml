@@ -6,30 +6,76 @@
         <result property="id" column="id"/>
         <result property="name" column="name"/>
         <result property="pwd" column="pwd"/>
-        <result property="nickName" column="nick_name"/>
+        <result property="nickname" column="nickname"/>
         <result property="birthday" column="birthday"/>
         <result property="sex" column="sex"/>
-        <result property="address" column="address"/>
+        <result property="introduction" column="introduction"/>
         <collection property="questionList" javaType="ArrayList" ofType="com.joyfully.springboot.entity.Question">
             <result column="q_id" property="id"/>
             <result column="q_issue" property="issue"/>
-            <result column="q_category" property="category"/>
             <result column="q_type" property="type"/>
             <result column="q_share" property="share"/>
         </collection>
     </resultMap>
 
+    <resultMap id="questioner" type="com.joyfully.springboot.controller.dto.QuestionerInfo">
+        <result property="avatar" column="avatar"/>
+        <result property="introduction" column="introduction"/>
+        <result property="nickname" column="nickname"/>
+        <result property="userId" column="user_id"/>
+        <result property="questionCount" column="question_count"/>
+        <result property="answerCount" column="answer_count"/>
+    </resultMap>
+
+    <resultMap id="fileowner" type="com.joyfully.springboot.controller.dto.FileOwnerInfo">
+        <result property="avatar" column="avatar"/>
+        <result property="introduction" column="introduction"/>
+        <result property="nickname" column="nickname"/>
+        <result property="userId" column="user_id"/>
+        <result property="fileCount" column="file_count"/>
+    </resultMap>
+
+
+    <select id="selectUserOrderByQuestionCount" resultMap="questioner">
+        select user.id user_id, avatar, introduction, nickname,
+            (select count(*) from user_question uq
+                    where user.id = uq.user_id and user.id != 6
+                ) question_count
+        from user
+        order by question_count desc
+        limit #{limit}
+    </select>
+
+    <select id="selectUserOrderByAnswerCount" resultMap="questioner">
+        select user.id user_id, avatar, introduction, nickname,
+            (select count(*) from answer an
+             where user.id = an.user_id and user.id != 6
+                ) answer_count
+        from user
+        order by answer_count desc
+        limit #{limit}
+    </select>
+
+    <select id="selectUserOrderByFileCount" resultMap="fileowner">
+        select user.id user_id, avatar, introduction, nickname,
+            (select count(*) from file
+             where user.id = file.user_id and user.id != 6
+                ) file_count
+        from user
+        order by file_count desc
+        limit #{limit}
+    </select>
+
     <!-- 在此处自定义了sql语句，但是还想使用mybatisplus的Wrapper筛选器，所以在这里使用${ew.customSqlSegment}-->
     <!-- ${ew.customSqlSegment} 指代Wrapper的筛选条件，是以where开头的语句-->
-    <select id="findPage" resultMap="userMap">
+    <!--<select id="findPage" resultMap="userMap">
         select `user`.*,
                question.id       q_id,
                question.issue    q_issue,
-               question.category q_category,
                question.type     q_type,
                question.share    q_share
         from `user`
-                 left join question on user.id = question.q_user_id
+                 left join question on user.id = question.user_id
             ${ew.customSqlSegment}
-    </select>
+    </select>-->
 </mapper>

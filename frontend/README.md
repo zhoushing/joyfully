@@ -5,6 +5,8 @@
 ```bash
 ├── public                     # 静态资源
 │   │── static                 # 配置文件
+│   │   │── img                # 图片
+│   │   └── js/config.js       # 配置文件
 │   │── favicon.ico            # favicon图标
 │   └── index.html             # html模板
 ├── src                        # 源代码
@@ -41,3 +43,6 @@ npm install --registry=https://registry.npm.taobao.org
 # 启动服务
 npm run dev
 ```
+
+## 访问地址
+默认：127.0.0.1:8080

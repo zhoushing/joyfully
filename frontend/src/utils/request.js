@@ -17,37 +17,16 @@ request.interceptors.request.use(
     config => {
         config.headers['Content-Type'] = 'application/json;charset=utf-8';
 
-        // config.headers['token'] = user.token;  // 设置请求头
-
         // 取出sessionStorage里面缓存的用户信息
         let userJson = sessionStorage.getItem("user");
-        let adminJson = sessionStorage.getItem("admin");
 
         if (!whiteUrls.includes(config.url)) {
-            if (!userJson && !adminJson) {
+            if (!userJson) {
                 router.push("/login")
-            } else if (!adminJson) {
+            } else {
                 let user = JSON.parse(userJson)
                 config.headers["token"] = user.token
-            } else {
-                let admin = JSON.parse(adminJson)
-                config.headers["token"] = admin.token
             }
-        }
-
-        if (config.url !== '/register' && !userJson && !adminJson) {
-            router.push("/login");
-        }
-
-        /* 拦截非超级管理员 进入 管理员操作界面 */
-        if (!adminJson && config.url === '/admin/find') {
-            let adminData = adminJson.split(':')[1].split(',');
-            let adminId = Number(adminData[0]);
-            request.get("/admin/checkPower", {params: {"id": adminId}}).then(res => {
-                if (!res.data) {
-                    router.push("/userManage");
-                }
-            });
         }
 
         return config
@@ -60,6 +39,7 @@ request.interceptors.request.use(
 request.interceptors.response.use(
     response => {
         let res = response.data;
+
         // 如果是返回的文件
         if (response.config.responseType === 'blob') {
             return res
@@ -70,7 +50,7 @@ request.interceptors.response.use(
         }
         // 验证token
         if (res.code === '401') {
-            console.error("token过期，请重新登录")
+            console.error("前端token过期，请重新登录")
             router.push("/login")
         }
         return res;

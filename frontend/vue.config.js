@@ -1,3 +1,5 @@
+// const TerserPlugin = require('terser-webpack-plugin')
+
 // 跨域配置
 module.exports = {
     devServer: {    // 记住，别写错了devServer
@@ -13,5 +15,19 @@ module.exports = {
                 }
             }
         }
-    }
-}
+    },
+    /*configureWebpack: {
+        minimizer: [
+            new TerserPlugin({
+            cache: true,
+            parallel: true,
+            sourceMap: true,
+            terserOptions: {
+                compress: {
+                    drop_console: true,
+                    drop_debugger: true
+                }
+            }
+        })]
+    }*/
+};

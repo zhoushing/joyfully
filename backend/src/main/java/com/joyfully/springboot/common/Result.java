@@ -1,9 +1,13 @@
 package com.joyfully.springboot.common;
 
+import cn.hutool.http.HttpStatus;
+import com.joyfully.springboot.enums.ExceptionEnum;
+import com.joyfully.springboot.enums.HttpCodeEnum;
+import com.joyfully.springboot.exception.CustomException;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 返回给前台的信息包装类
@@ -13,24 +17,33 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Data
 @NoArgsConstructor
+@ApiModel(value = "Result", description = "操作结果")
 public class Result<T> {
     /**
      * 操作状态码
      */
+    @ApiModelProperty(value = "操作状态码", dataType = "String")
     private String code;
 
     /**
      * 附带消息
      */
+    @ApiModelProperty(value = "附带消息", dataType = "String")
     private String msg;
 
     /**
      * 处理过的数据或者反馈
      */
+    @ApiModelProperty(value = "处理过的数据或者反馈", dataType = "Object")
     private T data;
 
     public Result(T data) {
         this.data = data;
+    }
+
+    public void setStatus(HttpCodeEnum httpCodeEnum) {
+        this.code = httpCodeEnum.getCode();
+        this.msg = httpCodeEnum.getMsg();
     }
 
     /**
@@ -40,8 +53,7 @@ public class Result<T> {
      */
     public static Result success() {
         Result result = new Result();
-        result.setCode("0");
-        result.setMsg("成功");
+        result.setStatus(HttpCodeEnum.OK);
         return result;
     }
 
@@ -53,8 +65,7 @@ public class Result<T> {
      */
     public static <T> Result<T> success(T data) {
         Result<T> result = new Result<>(data);
-        result.setCode("0");
-        result.setMsg("成功");
+        result.setStatus(HttpCodeEnum.OK);
         return result;
     }
 
@@ -69,6 +80,32 @@ public class Result<T> {
         Result result = new Result();
         result.setCode(code);
         result.setMsg(msg);
+        return result;
+    }
+
+    /**
+     * 错误
+     *
+     * @param customException 自定义异常
+     * @return {@link Result}
+     */
+    public static Result error(CustomException customException) {
+        Result result = new Result();
+        result.setCode(customException.getCode());
+        result.setMsg(customException.getMsg());
+        return result;
+    }
+
+    /**
+     * 错误
+     *
+     * @param httpCodeEnum http代码枚举
+     * @return {@link Result}
+     */
+    public static Result error(HttpCodeEnum httpCodeEnum) {
+        Result result = new Result();
+        result.setCode(httpCodeEnum.getCode());
+        result.setMsg(httpCodeEnum.getMsg());
         return result;
     }
 }

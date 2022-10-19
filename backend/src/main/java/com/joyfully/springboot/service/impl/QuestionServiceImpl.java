@@ -1,19 +1,22 @@
 package com.joyfully.springboot.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.Wrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.joyfully.springboot.entity.Question;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
+import com.joyfully.springboot.entity.*;
+import com.joyfully.springboot.enums.HttpCodeEnum;
+import com.joyfully.springboot.exception.QuestionException;
+import com.joyfully.springboot.mapper.QuestionCategoryMapper;
 import com.joyfully.springboot.mapper.QuestionMapper;
+import com.joyfully.springboot.mapper.UserQuestionMapper;
 import com.joyfully.springboot.service.QuestionService;
 import org.springframework.stereotype.Service;
-import redis.clients.jedis.JedisPool;
 
 import javax.annotation.Resource;
-import java.io.Serializable;
-import java.util.Collection;
+import java.sql.Wrapper;
 import java.util.List;
-import java.util.Map;
 
 /**
  * 问题服务实现
@@ -22,7 +25,7 @@ import java.util.Map;
  * @date 2021/07/31
  */
 @Service("questionService")
-public class QuestionServiceImpl implements QuestionService {
+public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> implements QuestionService {
     /**
      * 问题映射器
      */
@@ -30,243 +33,239 @@ public class QuestionServiceImpl implements QuestionService {
     QuestionMapper questionMapper;
 
     /**
-     * jedis
+     * 用户问题映射器
      */
     @Resource
-    JedisPool jedisPool;
-    
+    UserQuestionMapper userQuestionMapper;
+
     /**
-     * 插入一条记录
+     * 问题类别映射器
+     */
+    @Resource
+    QuestionCategoryMapper questionCategoryMapper;
+
+
+    /**
+     * 保存问题
      *
-     * @param entity 实体对象
-     * @return int
+     * @param question 问题
+     * @return 保存是否成功
      */
     @Override
-    public int insert(Question entity) {
-        return questionMapper.insert(entity);
+    public boolean save(Question question) {
+        int insert = questionMapper.insert(question);
+
+        List<Category> categoryList = question.getCategoryList();
+
+        if (categoryList != null && categoryList.size() != 0) {
+            categoryList.forEach(category -> {
+                QuestionCategory questionCategory = QuestionCategory.builder()
+                        .questionId(question.getId())
+                        .categoryId(category.getId())
+                        .build();
+                questionCategoryMapper.insert(questionCategory);
+            });
+        }
+
+        return insert != 0;
     }
 
     /**
-     * 根据 ID 删除
+     * 添加关注
      *
-     * @param id 主键ID
-     * @return int
+     * @param userQuestion 用户问题
+     * @return boolean
      */
     @Override
-    public int deleteById(Serializable id) {
-        return questionMapper.deleteById(id);
+    public boolean addAttention(UserQuestion userQuestion) {
+        UserQuestion select = userQuestionMapper.selectRepeat(userQuestion);
+
+        if (select != null) {
+            return false;
+        }
+
+        int insert = userQuestionMapper.insert(userQuestion);
+
+        if (insert == 0) {
+            throw new QuestionException(HttpCodeEnum.DB_INSERT_ERROR);
+        }
+        return true;
     }
 
     /**
-     * 根据 columnMap 条件，删除记录
+     * 添加类别
      *
-     * @param columnMap 表字段 map 对象
-     * @return int
+     * @param questionId   问题id
+     * @param categoryList 类别列表
      */
     @Override
-    public int deleteByMap(Map<String, Object> columnMap) {
-        return questionMapper.deleteByMap(columnMap);
+    public void addCategory(Integer questionId, List<Category> categoryList) {
+        if (categoryList == null || categoryList.size() == 0) {
+            return ;
+        }
+
+        for (Category category : categoryList) {
+            LambdaQueryWrapper<QuestionCategory> wrapper = Wrappers.lambdaQuery();
+            wrapper.eq(QuestionCategory::getQuestionId, questionId).
+                    eq(QuestionCategory::getCategoryId, category.getId());
+            QuestionCategory questionCategory = questionCategoryMapper.selectOne(wrapper);
+
+            if (questionCategory == null) {
+                questionCategory = QuestionCategory.builder()
+                        .questionId(questionId)
+                        .categoryId(category.getId())
+                        .build();
+                questionCategoryMapper.insert(questionCategory);
+            }
+        }
     }
 
     /**
-     * 根据 entity 条件，删除记录
+     * 添加类别
      *
-     * @param queryWrapper 实体对象封装操作类（可以为 null,里面的 entity 用于生成 where 语句）
-     * @return int
+     * @param questionId 问题id
+     * @param category   类别
      */
     @Override
-    public int delete(Wrapper<Question> queryWrapper) {
-        return questionMapper.delete(queryWrapper);
+    public void addCategory(Integer questionId, Category category) {
+        QuestionCategory questionCategory = QuestionCategory.builder()
+                .questionId(questionId)
+                .categoryId(category.getId())
+                .build();
+        questionCategoryMapper.insert(questionCategory);
     }
 
     /**
-     * 删除（根据ID 批量删除）
+     * 删除
+     * 删除指定问题
      *
-     * @param idList 主键ID列表(不能为 null 以及 empty)
-     * @return int
+     * @param id id
      */
     @Override
-    public int deleteBatchIds(Collection<? extends Serializable> idList) {
-        return questionMapper.deleteBatchIds(idList);
+    public void delete(Integer id) {
+        int delete = questionMapper.deleteById(id);
+        if (delete == 0) {
+            throw new QuestionException(HttpCodeEnum.DB_DELETE_ERROR);
+        }
     }
 
     /**
-     * 根据 ID 修改
+     * 删除通过用户id
      *
-     * @param entity 实体对象
-     * @return int
+     * @param id id
      */
     @Override
-    public int updateById(Question entity) {
-        return questionMapper.updateById(entity);
+    public void deleteByUserId(Integer id) {
+        int delete = userQuestionMapper.deleteByUserId(id);
+        if (delete == 0) {
+            throw new QuestionException(HttpCodeEnum.DB_DELETE_ERROR);
+        }
     }
 
     /**
-     * 根据 whereEntity 条件，更新记录
+     * 删除类别
      *
-     * @param entity        实体对象 (set 条件值,可以为 null)
-     * @param updateWrapper 实体对象封装操作类（可以为 null,里面的 entity 用于生成 where 语句）
-     * @return int
+     * @param questionCategory 问题类别
      */
     @Override
-    public int update(Question entity, Wrapper<Question> updateWrapper) {
-        return questionMapper.update(entity, updateWrapper);
+    public void deleteCategory(QuestionCategory questionCategory) {
+        LambdaQueryWrapper<QuestionCategory> wrapper = Wrappers.lambdaQuery();
+        wrapper.eq(QuestionCategory::getQuestionId, questionCategory.getQuestionId())
+                .eq(QuestionCategory::getCategoryId, questionCategory.getCategoryId());
+
+        questionCategoryMapper.delete(wrapper);
     }
 
     /**
-     * 查询所有类别通过userid
+     * 更新
+     * 更新问题
      *
-     * @param userId
-     * @return {@link List<String>}
+     * @param question 问题
      */
     @Override
-    public List<String> queryAllCategoryByUserId(Integer userId) {
-        return this.questionMapper.queryAllCategoryByUserId(userId);
+    public void update(Question question) {
+        int update = questionMapper.updateById(question);
+
+        if (update == 0) {
+            throw new QuestionException(HttpCodeEnum.DB_UPDATE_ERROR);
+        }
     }
 
     /**
-     * 查询限制条数随机问题
+     * 评价
      *
-     * @param limit 限制
-     * @return {@link List<Question>}
+     * @param id         id
+     * @param isBelittle 是赞美
+     * @return boolean
      */
     @Override
-    public List<Question> queryRandomLimit(Integer limit) {
-        return this.questionMapper.queryRandomLimit(limit);
+    public boolean evaluate(String id, boolean isBelittle) {
+        Question question = questionMapper.selectById(id);
+
+        if (question == null) {
+            return false;
+        }
+
+        if (isBelittle) {
+            question.setBelittleCount(question.getBelittleCount() + 1);
+        } else {
+            question.setPraiseCount(question.getPraiseCount() + 1);
+        }
+
+        questionMapper.updateById(question);
+
+        return true;
     }
 
     /**
-     * 查询指定用户的限制条数随机问题
+     * 得到通过id
      *
-     * @param limit 限制
-     * @param id    id
-     * @return {@link List}<{@link Question}>
+     * @param id id
+     * @return {@link File}
      */
     @Override
-    public List<Question> queryRandomLimitById(Integer limit, Integer id) {
-        return this.questionMapper.queryRandomLimitById(limit, id);
-    }
-
-    /**
-     * 根据 ID 查询
-     *
-     * @param id 主键ID
-     * @return {@link Question}
-     */
-    @Override
-    public Question selectById(Serializable id) {
+    public Question getById(String id) {
         return questionMapper.selectById(id);
     }
 
-    /**
-     * 查询（根据ID 批量查询）
-     *
-     * @param idList 主键ID列表(不能为 null 以及 empty)
-     * @return {@link List <Question>}
-     */
     @Override
-    public List<Question> selectBatchIds(Collection<? extends Serializable> idList) {
-        return questionMapper.selectBatchIds(idList);
+    public PageInfo<Question> findPage(Integer pageNum, Integer pageSize, Integer userId) {
+        return findPage(pageNum, pageSize, userId, null);
     }
 
     /**
-     * 查询（根据 columnMap 条件）
+     * 找到页面
+     * 查询问题列表
      *
-     * @param columnMap 表字段 map 对象
+     * @param pageNum  当前页面位置
+     * @param pageSize 页面大小
+     * @param userId   用户id
+     * @return {@link PageInfo}<{@link Question}>
+     */
+    @Override
+    public PageInfo<Question> findPage(Integer pageNum, Integer pageSize, Integer userId, String search) {
+        List<Integer> questionIdList = null;
+
+        if (userId != null) {
+            questionIdList = userQuestionMapper.selectQuestionIdByUserId(userId);
+        }
+
+        // 注意：只有紧跟着PageHelper.startPage(pageNum,pageSize)的sql语句才被pagehelper起作用
+        PageHelper.startPage(pageNum, pageSize);
+        List<Question> questionList = questionMapper.queryAll(questionIdList, search);
+
+        return new PageInfo<>(questionList);
+    }
+
+    /**
+     * 查询限制条数根据好评数排序
+     *
+     * @param limit 限制
      * @return {@link List<Question>}
      */
     @Override
-    public List<Question> selectByMap(Map<String, Object> columnMap) {
-        return questionMapper.selectByMap(columnMap);
-    }
+    public List<Question> queryByPraise(Integer limit) {
 
-    /**
-     * 根据 entity 条件，查询一条记录
-     *
-     * @param queryWrapper 实体对象封装操作类（可以为 null）
-     * @return {@link Question}
-     */
-    @Override
-    public Question selectOne(Wrapper<Question> queryWrapper) {
-        return questionMapper.selectOne(queryWrapper);
-    }
-
-    /**
-     * 根据 Wrapper 条件，查询总记录数
-     *
-     * @param queryWrapper 实体对象封装操作类（可以为 null）
-     * @return {@link Integer}
-     */
-    @Override
-    public Integer selectCount(Wrapper<Question> queryWrapper) {
-        return questionMapper.selectCount(queryWrapper);
-    }
-
-    /**
-     * 根据 entity 条件，查询全部记录
-     *
-     * @param queryWrapper 实体对象封装操作类（可以为 null）
-     * @return {@link List<Question>}
-     */
-    @Override
-    public List<Question> selectList(Wrapper<Question> queryWrapper) {
-        return questionMapper.selectList(queryWrapper);
-    }
-
-    /**
-     * 根据 Wrapper 条件，查询全部记录
-     *
-     * @param queryWrapper 实体对象封装操作类（可以为 null）
-     * @return {@link List<Map<String, Object>>}
-     */
-    @Override
-    public List<Map<String, Object>> selectMaps(Wrapper<Question> queryWrapper) {
-        return questionMapper.selectMaps(queryWrapper);
-    }
-
-    /**
-     * 根据 Wrapper 条件，查询全部记录
-     * <p>注意： 只返回第一个字段的值</p>
-     *
-     * @param queryWrapper 实体对象封装操作类（可以为 null）
-     * @return {@link List<Object>}
-     */
-    @Override
-    public List<Object> selectObjs(Wrapper<Question> queryWrapper) {
-        return questionMapper.selectObjs(queryWrapper);
-    }
-
-    /**
-     * 选择页面
-     * 根据 entity 条件，查询全部记录（并翻页）
-     *
-     * @param page         分页查询条件（可以为 RowBounds.DEFAULQuestion）
-     * @param queryWrapper 实体对象封装操作类（可以为 null）
-     * @return {@link P}
-     */
-    @Override
-    public <P extends IPage<Question>> P selectPage(P page, Wrapper<Question> queryWrapper) {
-        return questionMapper.selectPage(page, queryWrapper);
-    }
-
-    /**
-     * 查询所有信息
-     * @param page 查询的页面
-     * @return page
-     */
-    public Page<Question> findPage(Page<Question> page, Wrapper<Question> queryWrapper) {
-        return questionMapper.findPage(page, queryWrapper);
-    }
-
-    /**
-     * 根据 Wrapper 条件，查询全部记录（并翻页）
-     *
-     * @param page         分页查询条件
-     * @param queryWrapper 实体对象封装操作类
-     * @return {@link P}
-     */
-    @Override
-    public <P extends IPage<Map<String, Object>>> P selectMapsPage(P page, Wrapper<Question> queryWrapper) {
-        return questionMapper.selectMapsPage(page, queryWrapper);
+        return questionMapper.queryByPraise(limit);
     }
 }

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.joyfully.springboot.mapper.EvaluationMapper">
+    <resultMap id="EvaluationInfo" type="com.joyfully.springboot.controller.dto.EvaluationInfo">
+        <result property="id" column="e_id"/>
+        <result property="nickname" column="nickname"/>
+        <result property="type" column="e_type"/>
+        <result property="reason" column="reason"/>
+        <result property="target" column="target"/>
+        <result property="userId" column="user_id"/>
+    </resultMap>
+
+    <select id="selectAll" resultMap="EvaluationInfo">
+        select evaluation.id e_id, nickname, (report + belittle) e_type, report_reason reason, target, user.id user_id
+            from evaluation
+                left join user
+                    on evaluation.user_id = user.id and checked = false
+            where nickname like #{search} and (report + belittle) > 0
+    </select>
+</mapper>
